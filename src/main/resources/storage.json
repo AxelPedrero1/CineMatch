@@ -1,0 +1,45 @@
+[ {
+  "title" : "Jawbreakers",
+  "status" : "envie",
+  "dateTimeIso" : "2025-10-15T15:04:36.988492"
+}, {
+  "title" : "Le Fabuleux Destin d'Amélie Poulain",
+  "status" : "envie",
+  "dateTimeIso" : "2025-10-15T15:05:27.202356500"
+}, {
+  "title" : "Le Parrain III",
+  "status" : "deja_vu",
+  "dateTimeIso" : "2025-10-15T15:05:50.466281200"
+}, {
+  "title" : "\"Parasite\"",
+  "status" : "envie",
+  "dateTimeIso" : "2025-10-15T15:05:53.952515"
+}, {
+  "title" : "[Erreur Ollama] null",
+  "status" : "pas_interesse",
+  "dateTimeIso" : "2025-10-15T15:40:58.736032400"
+}, {
+  "title" : "\"The Shawshank Redemption\"",
+  "status" : "envie",
+  "dateTimeIso" : "2025-10-15T15:52:15.073868"
+}, {
+  "title" : "Le Choix Illusoire",
+  "status" : "pas_interesse",
+  "dateTimeIso" : "2025-10-15T15:53:08.932133800"
+}, {
+  "title" : "Joker",
+  "status" : "deja_vu",
+  "dateTimeIso" : "2025-10-15T15:54:04.585519500"
+}, {
+  "title" : "\"Certainly Three\"",
+  "status" : "pas_interesse",
+  "dateTimeIso" : "2025-10-15T16:13:18.691849900"
+}, {
+  "title" : "Super Mario Bros. : Le Film",
+  "status" : "envie",
+  "dateTimeIso" : "2025-10-15T16:15:48.513633800"
+}, {
+  "title" : "Super Mario Bros. : La Malédiction du Royaumeapproprié",
+  "status" : "envie",
+  "dateTimeIso" : "2025-10-15T16:18:46.740973300"
+} ]
