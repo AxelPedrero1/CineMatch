@@ -1,0 +1,97 @@
+name: Auto PR on push
+
+on:
+  push:
+    branches-ignore:
+      - main           # change "main" si ta branche par défaut a un autre nom
+      - 'dependabot/**'
+      - 'renovate/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  open-or-update-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure PR exists (create if missing)
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = context.ref.replace('refs/heads/', '');
+            const owner  = context.repo.owner;
+            const repo   = context.repo.repo;
+
+            // ne crée pas de PR depuis main -> main
+            if (branch === 'main') {
+              core.info('Skip on main');
+              return;
+            }
+
+            // Vérifie si une PR ouverte existe déjà de "branch" -> "main"
+            const { data: prs } = await github.rest.pulls.list({
+              owner, repo, state: 'open', head: `${owner}:${branch}`, base: 'main'
+            });
+
+            if (prs.length > 0) {
+              core.info(`PR déjà ouverte: #${prs[0].number}`);
+              return;
+            }
+
+            // Construit un titre/description simples
+            const { data: commit } = await github.rest.repos.getCommit({
+              owner, repo, ref: context.sha
+            });
+            const firstLine = (commit.commit.message || '').split('\n')[0];
+
+            const title = `${branch} – ${firstLine || 'Mise à jour'}`;
+            const body  = [
+              `PR créée automatiquement suite à un push sur \`${branch}\`.`,
+              '',
+              `Dernier commit: ${context.sha}`
+            ].join('\n');
+
+            // Crée la PR
+            const { data: pr } = await github.rest.pulls.create({
+              owner, repo,
+              title,
+              head: branch,
+              base: 'main',         // change si ta base est "develop" par ex.
+              body
+            });
+
+            core.info(`PR créée: #${pr.number} ${pr.html_url}`);
+
+      # (Optionnel) Ajouter des labels, reviewers, assignees
+      - name: Add labels / reviewers
+        if: ${{ success() }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo  = context.repo.repo;
+
+            // Récupère la dernière PR ouverte depuis cette branche
+            const branch = context.ref.replace('refs/heads/', '');
+            const { data: prs } = await github.rest.pulls.list({
+              owner, repo, state: 'open', head: `${owner}:${branch}`, base: 'main'
+            });
+            if (prs.length === 0) return;
+
+            const prNumber = prs[0].number;
+
+            // Labels
+            await github.rest.issues.addLabels({
+              owner, repo, issue_number: prNumber,
+              labels: ['auto-pr']
+            });
+
+            // Reviewers (à adapter)
+            // await github.rest.pulls.requestReviewers({
+            //   owner, repo, pull_number: prNumber,
+            //   reviewers: ['ton-collaborateur']
+            // });
