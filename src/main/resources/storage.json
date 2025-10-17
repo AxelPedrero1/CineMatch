@@ -74,4 +74,12 @@
   "title" : "\"Pain and Chocolate\"",
   "status" : "envie",
   "dateTimeIso" : "2025-10-17T09:06:37.794103700"
+}, {
+  "title" : "\"Hereditary\"",
+  "status" : "pas_interesse",
+  "dateTimeIso" : "2025-10-17T11:07:36.018757"
+}, {
+  "title" : "Blade Runner 2049",
+  "status" : "envie",
+  "dateTimeIso" : "2025-10-17T11:07:56.652481200"
 } ]
