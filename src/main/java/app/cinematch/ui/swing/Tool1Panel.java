@@ -190,7 +190,7 @@ public class Tool1Panel extends JPanel {
     }
 
     private static String htmlCenterBig(String text) {
-        // converti les retours à la ligne en <br/>
+        // convertit les retours à la ligne en <br/>
         return text.replace("\n", "<br/>");
     }
 
