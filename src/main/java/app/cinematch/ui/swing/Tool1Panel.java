@@ -5,7 +5,9 @@ import app.cinematch.model.Recommendation;
 import app.cinematch.util.ImageLoader;
 
 import javax.swing.*;
+import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 import java.awt.*;
 
 public class Tool1Panel extends JPanel {
@@ -20,37 +22,58 @@ public class Tool1Panel extends JPanel {
     private final JLabel reason = new JLabel("—", SwingConstants.CENTER);
     private final JLabel platform = new JLabel("—", SwingConstants.CENTER);
 
-    // Description centrée (HTML) + worker annulable (comme Tool2)
     private final JEditorPane descPane = new JEditorPane("text/html", "");
     private SwingWorker<String, Void> descWorker;
 
-    private final JButton addWishlist = new JButton("Ajouter à ma liste ❤️");
-    private final JButton descBtn = new JButton("Regénérer description");
-    private final JButton backBtn = new JButton("⬅ Retour au menu");
+    private final JButton addWishlist = new JButton("Ajouter à ma liste");
+    private final JButton descBtn = new JButton("Régénérer description");
+    private final JButton backBtn = new JButton("Retour");
 
     private Recommendation current;
+
+    private static final Color NEON_PINK      = new Color(255, 64, 160);
+    private static final Color NEON_PINK_DARK = new Color(200, 30, 120);
+    private static final Color HOVER_PINK_TXT = new Color(255, 210, 230);
+    private static final Color BASE_CARD_BG   = new Color(30, 30, 40);
+    private static final Color HOVER_CARD_BG  = new Color(50, 40, 60);
+    private static final Color BG_TOP         = new Color(18, 18, 24);
+    private static final Color BG_BOTTOM      = new Color(35, 20, 40);
+    private static final Color TEXT_DIM       = new Color(220, 220, 220);
 
     public Tool1Panel(MovieRecommenderService service, MainFrame parent) {
         this.service = service;
         this.parentFrame = parent;
         setLayout(new BorderLayout(10,10));
+        setOpaque(false);
+        setBorder(new EmptyBorder(16, 20, 20, 20));
 
-        // --- Barre du haut ---
         JPanel topBar = new JPanel(new BorderLayout(8,8));
-        topBar.add(backBtn, BorderLayout.WEST);
+        topBar.setOpaque(false);
+        JPanel left = new JPanel(); left.setOpaque(false);
+        styleBackOutlined(backBtn);
+        backBtn.addActionListener(e -> parentFrame.showCard("home"));
+        left.add(backBtn);
+        topBar.add(left, BorderLayout.WEST);
+
         JPanel topInput = new JPanel(new BorderLayout(8,8));
-        topInput.add(new JLabel("Film aimé : "), BorderLayout.WEST);
+        topInput.setOpaque(false);
+        JLabel lbl = new JLabel("Film aimé : ");
+        lbl.setForeground(Color.WHITE);
+        lbl.setFont(lbl.getFont().deriveFont(Font.PLAIN, 15f));
+        topInput.add(lbl, BorderLayout.WEST);
+        styleTextField(input);
         topInput.add(input, BorderLayout.CENTER);
+        styleNeonButton(propose);
         topInput.add(propose, BorderLayout.EAST);
         topBar.add(topInput, BorderLayout.CENTER);
         add(topBar, BorderLayout.NORTH);
 
-        // --- Zone centrale ---
-        title.setFont(title.getFont().deriveFont(Font.BOLD, 20f));
+        title.setFont(title.getFont().deriveFont(Font.BOLD, 24f));
+        title.setForeground(Color.WHITE);
         JPanel center = new JPanel(new BorderLayout(8,8));
+        center.setOpaque(false);
         center.add(title, BorderLayout.NORTH);
 
-        // Description centrée (HTML) comme Tool2
         descPane.setEditable(false);
         descPane.setOpaque(false);
         descPane.setBorder(new EmptyBorder(10, 24, 10, 24));
@@ -58,61 +81,50 @@ public class Tool1Panel extends JPanel {
         descScroll.setBorder(null);
         descScroll.getViewport().setOpaque(false);
         descScroll.setOpaque(false);
-
-        // On n’ajoute PAS le poster au centre pour laisser la place à la description centrée
-        // center.add(poster, BorderLayout.CENTER);
         center.add(descScroll, BorderLayout.CENTER);
 
-        // Bloc en dessous : raison + plateforme
         JPanel info = new JPanel(new GridLayout(2,1,0,4));
+        info.setOpaque(false);
+        styleInfoLabel(reason);
+        styleInfoLabel(platform);
         info.add(reason);
         info.add(platform);
         center.add(info, BorderLayout.SOUTH);
-
         add(center, BorderLayout.CENTER);
 
-        // --- Bas de page ---
         JPanel bottom = new JPanel();
+        bottom.setOpaque(false);
+        styleNeonButton(addWishlist);
+        styleNeonButton(descBtn);
         bottom.add(addWishlist);
         bottom.add(descBtn);
         add(bottom, BorderLayout.SOUTH);
 
-        // --- Actions ---
         propose.addActionListener(e -> onPropose());
         addWishlist.addActionListener(e -> onAdd());
-        descBtn.addActionListener(e -> startDescriptionForCurrent()); // regénère
-        backBtn.addActionListener(e -> parentFrame.showCard("home"));
+        descBtn.addActionListener(e -> startDescriptionForCurrent());
     }
 
     private void onPropose() {
         String liked = input.getText().trim();
         if (liked.isEmpty()) return;
         setBusy(true);
-
-        // annule éventuelle génération précédente et nettoie
         if (descWorker != null && !descWorker.isDone()) descWorker.cancel(true);
         setDescHtml("<i>Recherche d’un film similaire…</i>");
-
         new SwingWorker<Recommendation, Void>() {
-            @Override protected Recommendation doInBackground() {
-                return service.recommendFromLike(liked);
-            }
+            @Override protected Recommendation doInBackground() { return service.recommendFromLike(liked); }
             @Override protected void done() {
                 try {
                     current = get();
-                    title.setText("🎥 " + current.title());
-                    reason.setText("💬 " + current.reason());
-                    platform.setText("📺 " + current.platform());
+                    title.setText(current.title());
+                    reason.setText(current.reason());
+                    platform.setText(current.platform());
                     if (current.posterUrl() != null) {
-                        // le poster reste dispo si un jour tu veux le remettre dans le layout
                         poster.setIcon(ImageLoader.loadPoster(current.posterUrl(), 400, 500));
                     } else {
                         poster.setIcon(null);
                     }
-
-                    // génération automatique de la description
                     startDescriptionForCurrent();
-
                 } catch (Exception ex) {
                     title.setText("Erreur: " + ex.getMessage());
                     setDescHtml("<i>Description indisponible.</i>");
@@ -124,11 +136,8 @@ public class Tool1Panel extends JPanel {
     private void startDescriptionForCurrent() {
         if (current == null) return;
         final String titleAtStart = current.title();
-
         setDescHtml("<i>Génération de la description…</i>");
-
         if (descWorker != null && !descWorker.isDone()) descWorker.cancel(true);
-
         descWorker = new SwingWorker<String, Void>() {
             @Override protected String doInBackground() { return service.generateDescription(titleAtStart); }
             @Override protected void done() {
@@ -160,24 +169,22 @@ public class Tool1Panel extends JPanel {
         backBtn.setEnabled(!b);
     }
 
-    /* --------------------- Helpers HTML (identiques à Tool2) --------------------- */
-
     private void setDescHtml(String htmlInner) {
-        // Style global: centré, police plus grande (~18px), CADRE arrondi semi-transparent
         String html = """
             <html>
               <body style="margin:0;padding:0;">
-                <div style="display:flex;align-items:center;justify-content:center;min-height:220px;">
+                <div style="display:flex;align-items:center;justify-content:center;min-height:240px;">
                   <div style="
                       text-align:center;
                       font-size:18px;
                       line-height:1.5;
-                      border:2px solid rgba(255,255,255,0.3);
+                      border:2px solid rgba(255,255,255,0.35);
                       border-radius:12px;
                       padding:20px 40px;
-                      max-width:80%%;
+                      max-width:84%%;
                       background-color:rgba(255,255,255,0.05);
-                      box-shadow:0 0 15px rgba(0,0,0,0.3);
+                      box-shadow:0 0 15px rgba(0,0,0,0.35);
+                      color:#f5f5f5;
                   ">
                     %s
                   </div>
@@ -189,13 +196,87 @@ public class Tool1Panel extends JPanel {
         descPane.setCaretPosition(0);
     }
 
-    private static String htmlCenterBig(String text) {
-        // convertit les retours à la ligne en <br/>
-        return text.replace("\n", "<br/>");
-    }
-
+    private static String htmlCenterBig(String text) { return text.replace("\n", "<br/>"); }
     private static String htmlEscape(String s) {
         if (s == null) return "";
         return s.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;");
+    }
+
+    private void styleNeonButton(JButton b) {
+        b.setFocusPainted(false);
+        b.setForeground(Color.WHITE);
+        b.setBackground(BASE_CARD_BG);
+        b.setOpaque(true);
+        EmptyBorder pad = new EmptyBorder(10,16,10,16);
+        b.setBorder(new CompoundBorder(
+                new LineBorder(NEON_PINK_DARK, 2, true),
+                new CompoundBorder(new LineBorder(NEON_PINK, 1, true), pad)
+        ));
+        b.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override public void mouseEntered(java.awt.event.MouseEvent e) {
+                b.setBackground(HOVER_CARD_BG);
+                b.setForeground(HOVER_PINK_TXT);
+                b.setBorder(new CompoundBorder(
+                        new LineBorder(NEON_PINK, 2, true),
+                        new CompoundBorder(new LineBorder(Color.WHITE, 1, true), pad)
+                ));
+            }
+            @Override public void mouseExited(java.awt.event.MouseEvent e) {
+                b.setBackground(BASE_CARD_BG);
+                b.setForeground(Color.WHITE);
+                b.setBorder(new CompoundBorder(
+                        new LineBorder(NEON_PINK_DARK, 2, true),
+                        new CompoundBorder(new LineBorder(NEON_PINK, 1, true), pad)
+                ));
+            }
+        });
+        b.setFont(new Font("Segoe UI", Font.BOLD, 14));
+    }
+
+    private void styleBackOutlined(JButton b) {
+        b.setFocusPainted(false);
+        b.setContentAreaFilled(false);
+        b.setOpaque(false);
+        b.setForeground(TEXT_DIM);
+        EmptyBorder pad = new EmptyBorder(6,12,6,12);
+        b.setBorder(new CompoundBorder(new LineBorder(Color.WHITE, 1, true), pad));
+        b.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        b.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override public void mouseEntered(java.awt.event.MouseEvent e) {
+                b.setForeground(Color.WHITE);
+                b.setBorder(new CompoundBorder(new LineBorder(Color.WHITE, 2, true), pad));
+            }
+            @Override public void mouseExited(java.awt.event.MouseEvent e) {
+                b.setForeground(TEXT_DIM);
+                b.setBorder(new CompoundBorder(new LineBorder(Color.WHITE, 1, true), pad));
+            }
+        });
+    }
+
+    private void styleTextField(JTextField tf) {
+        tf.setForeground(Color.WHITE);
+        tf.setCaretColor(Color.WHITE);
+        tf.setBackground(new Color(25, 25, 32));
+        tf.setBorder(new CompoundBorder(
+                new LineBorder(new Color(120, 120, 140), 1, true),
+                new EmptyBorder(8,10,8,10)
+        ));
+        tf.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+    }
+
+    private void styleInfoLabel(JLabel l) {
+        l.setForeground(new Color(235,235,235));
+        l.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        l.setHorizontalAlignment(SwingConstants.CENTER);
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        Graphics2D g2 = (Graphics2D) g.create();
+        int w = getWidth(), h = getHeight();
+        g2.setPaint(new GradientPaint(0, 0, BG_TOP, 0, h, BG_BOTTOM));
+        g2.fillRect(0, 0, w, h);
+        g2.dispose();
     }
 }
