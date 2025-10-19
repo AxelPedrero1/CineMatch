@@ -90,4 +90,20 @@
   "title" : "Le Grand Badaud",
   "status" : "envie",
   "dateTimeIso" : "2025-10-17T11:43:20.064178200"
+}, {
+  "title" : "\"Juno\"",
+  "status" : "envie",
+  "dateTimeIso" : "2025-10-19T22:55:21.166238100"
+}, {
+  "title" : "\"Pain et Roses\"",
+  "status" : "pas_interesse",
+  "dateTimeIso" : "2025-10-19T22:55:22.461552400"
+}, {
+  "title" : "\"Jojo Rabbit\"",
+  "status" : "envie",
+  "dateTimeIso" : "2025-10-19T22:55:23.952525800"
+}, {
+  "title" : "Nomadland",
+  "status" : "deja_vu",
+  "dateTimeIso" : "2025-10-19T22:55:26.487394800"
 } ]
