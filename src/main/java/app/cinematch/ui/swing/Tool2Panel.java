@@ -9,7 +9,13 @@ import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
+import javax.swing.plaf.LayerUI;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.RoundRectangle2D;
+import java.util.Random;
 
 public class Tool2Panel extends JPanel {
 
@@ -27,29 +33,34 @@ public class Tool2Panel extends JPanel {
     private final JButton likeBtn = new JButton("Je veux voir");
     private final JButton nopeBtn = new JButton("Pas intéressé");
     private final JButton seenBtn = new JButton("Déjà vu");
-    private final JButton nextBtn = new JButton("Proposer autre");
     private final JButton backBtn = new JButton("Retour");
+
+    private final PopSparkLayerUI popUI = new PopSparkLayerUI();
+    private final ShakeLayerUI shakeUI = new ShakeLayerUI();
+    private final JLayer<JComponent> likeLayer = new JLayer<>(likeBtn, popUI);
+    private final JLayer<JComponent> nopeLayer = new JLayer<>(nopeBtn, shakeUI);
 
     private Recommendation current;
 
-    private static final Color NEON_PINK      = new Color(255, 64, 160);
+    private static final Color NEON_PINK = new Color(255, 64, 160);
     private static final Color NEON_PINK_DARK = new Color(200, 30, 120);
     private static final Color HOVER_PINK_TXT = new Color(255, 210, 230);
-    private static final Color BASE_CARD_BG   = new Color(30, 30, 40);
-    private static final Color HOVER_CARD_BG  = new Color(50, 40, 60);
-    private static final Color BG_TOP         = new Color(18, 18, 24);
-    private static final Color BG_BOTTOM      = new Color(35, 20, 40);
+    private static final Color BASE_CARD_BG = new Color(30, 30, 40);
+    private static final Color HOVER_CARD_BG = new Color(50, 40, 60);
+    private static final Color BG_TOP = new Color(18, 18, 24);
+    private static final Color BG_BOTTOM = new Color(35, 20, 40);
 
     public Tool2Panel(MovieRecommenderService service, MainFrame parent) {
         this.service = service;
         this.parentFrame = parent;
-        setLayout(new BorderLayout(10,10));
+        setLayout(new BorderLayout(10, 10));
         setOpaque(false);
         setBorder(new EmptyBorder(16, 20, 20, 20));
 
         JPanel topBar = new JPanel(new BorderLayout());
         topBar.setOpaque(false);
-        JPanel leftTop = new JPanel(); leftTop.setOpaque(false);
+        JPanel leftTop = new JPanel();
+        leftTop.setOpaque(false);
         styleBackOutlined(backBtn);
         backBtn.addActionListener(e -> parentFrame.showCard("home"));
         leftTop.add(backBtn);
@@ -59,7 +70,7 @@ public class Tool2Panel extends JPanel {
         title.setFont(title.getFont().deriveFont(Font.BOLD, 24f));
         title.setForeground(Color.WHITE);
 
-        JPanel center = new JPanel(new BorderLayout(8,8));
+        JPanel center = new JPanel(new BorderLayout(8, 8));
         center.setOpaque(false);
         center.add(title, BorderLayout.NORTH);
 
@@ -72,7 +83,7 @@ public class Tool2Panel extends JPanel {
         descScroll.setOpaque(false);
         center.add(descScroll, BorderLayout.CENTER);
 
-        JPanel info = new JPanel(new GridLayout(2,1,0,4));
+        JPanel info = new JPanel(new GridLayout(2, 1, 0, 4));
         info.setOpaque(false);
         styleInfoLabel(reason);
         styleInfoLabel(platform);
@@ -81,19 +92,25 @@ public class Tool2Panel extends JPanel {
         center.add(info, BorderLayout.SOUTH);
         add(center, BorderLayout.CENTER);
 
-        JPanel actions = new JPanel();
-        actions.setOpaque(false);
-        styleNeonButton(likeBtn);
-        styleNeonButton(nopeBtn);
-        styleNeonButton(seenBtn);
-        styleNeonButton(nextBtn);
-        actions.add(likeBtn);
-        actions.add(nopeBtn);
-        actions.add(seenBtn);
-        actions.add(nextBtn);
-        add(actions, BorderLayout.SOUTH);
+        JPanel footer = new JPanel(new BorderLayout());
+        footer.setOpaque(false);
 
-        nextBtn.addActionListener(e -> proposeNext());
+        JPanel midActions = new JPanel(new FlowLayout(FlowLayout.CENTER, 24, 6));
+        midActions.setOpaque(false);
+        styleNeonPrimary(likeBtn);
+        styleNeonPrimary(nopeBtn);
+        midActions.add(likeLayer);
+        midActions.add(nopeLayer);
+        footer.add(midActions, BorderLayout.CENTER);
+
+        JPanel bottomBar = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 8));
+        bottomBar.setOpaque(false);
+        styleNeonButton(seenBtn);
+        bottomBar.add(seenBtn);
+        footer.add(bottomBar, BorderLayout.SOUTH);
+
+        add(footer, BorderLayout.SOUTH);
+
         likeBtn.addActionListener(e -> onLike());
         nopeBtn.addActionListener(e -> onNope());
         seenBtn.addActionListener(e -> onSeen());
@@ -106,7 +123,8 @@ public class Tool2Panel extends JPanel {
         if (descWorker != null && !descWorker.isDone()) descWorker.cancel(true);
         setDescHtml("<i>Génération de la proposition…</i>");
         new SwingWorker<Recommendation, Void>() {
-            @Override protected Recommendation doInBackground() {
+            @Override
+            protected Recommendation doInBackground() {
                 Recommendation rec;
                 int guard = 0;
                 do {
@@ -115,7 +133,9 @@ public class Tool2Panel extends JPanel {
                 } while (JsonStorage.getByStatus("envie").contains(rec.title()) && guard < 6);
                 return rec;
             }
-            @Override protected void done() {
+
+            @Override
+            protected void done() {
                 try {
                     current = get();
                     title.setText(current.title());
@@ -141,8 +161,13 @@ public class Tool2Panel extends JPanel {
         setDescHtml("<i>Génération de la description…</i>");
         if (descWorker != null && !descWorker.isDone()) descWorker.cancel(true);
         descWorker = new SwingWorker<String, Void>() {
-            @Override protected String doInBackground() { return service.generateDescription(titleAtStart); }
-            @Override protected void done() {
+            @Override
+            protected String doInBackground() {
+                return service.generateDescription(titleAtStart);
+            }
+
+            @Override
+            protected void done() {
                 if (current == null || !current.title().equals(titleAtStart)) return;
                 try {
                     if (!isCancelled()) {
@@ -160,13 +185,21 @@ public class Tool2Panel extends JPanel {
     private void onLike() {
         if (current == null) return;
         service.mark(current.title(), "envie");
-        proposeNext();
+        setBusy(true);
+        runLikeAnimation(() -> {
+            setBusy(false);
+            proposeNext();
+        });
     }
 
     private void onNope() {
         if (current == null) return;
         service.mark(current.title(), "pas_interesse");
-        proposeNext();
+        setBusy(true);
+        runNopeAnimation(() -> {
+            setBusy(false);
+            proposeNext();
+        });
     }
 
     private void onSeen() {
@@ -179,41 +212,43 @@ public class Tool2Panel extends JPanel {
         likeBtn.setEnabled(!b);
         nopeBtn.setEnabled(!b);
         seenBtn.setEnabled(!b);
-        nextBtn.setEnabled(!b);
         backBtn.setEnabled(!b);
     }
 
     private void setDescHtml(String htmlInner) {
         String html = """
-        <html>
-          <body style="margin:0;padding:0;">
-            <div style="display:flex;align-items:center;justify-content:center;min-height:240px;">
-              <div style="
-                  text-align:center;
-                  font-size:18px;
-                  line-height:1.5;
-                  border:2px solid rgba(255,255,255,0.35);
-                  border-radius:12px;
-                  padding:20px 40px;
-                  max-width:84%%;
-                  background-color:rgba(255,255,255,0.05);
-                  box-shadow:0 0 15px rgba(0,0,0,0.35);
-                  color:#f5f5f5;
-              ">
-                %s
-              </div>
-            </div>
-          </body>
-        </html>
-        """.formatted(htmlInner);
+                <html>
+                  <body style="margin:0;padding:0;">
+                    <div style="display:flex;align-items:center;justify-content:center;min-height:240px;">
+                      <div style="
+                          text-align:center;
+                          font-size:18px;
+                          line-height:1.5;
+                          border:2px solid rgba(255,255,255,0.35);
+                          border-radius:12px;
+                          padding:20px 40px;
+                          max-width:84%%;
+                          background-color:rgba(255,255,255,0.05);
+                          box-shadow:0 0 15px rgba(0,0,0,0.35);
+                          color:#f5f5f5;
+                      ">
+                        %s
+                      </div>
+                    </div>
+                  </body>
+                </html>
+                """.formatted(htmlInner);
         descPane.setText(html);
         descPane.setCaretPosition(0);
     }
 
-    private static String htmlCenterBig(String text) { return text.replace("\n", "<br/>"); }
+    private static String htmlCenterBig(String text) {
+        return text.replace("\n", "<br/>");
+    }
+
     private static String htmlEscape(String s) {
         if (s == null) return "";
-        return s.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;");
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
     private void styleNeonButton(JButton b) {
@@ -221,56 +256,157 @@ public class Tool2Panel extends JPanel {
         b.setForeground(Color.WHITE);
         b.setBackground(BASE_CARD_BG);
         b.setOpaque(true);
-        EmptyBorder pad = new EmptyBorder(10,16,10,16);
+        EmptyBorder pad = new EmptyBorder(10, 16, 10, 16);
         b.setBorder(new CompoundBorder(
                 new LineBorder(NEON_PINK_DARK, 2, true),
                 new CompoundBorder(new LineBorder(NEON_PINK, 1, true), pad)
         ));
-        b.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override public void mouseEntered(java.awt.event.MouseEvent e) {
-                b.setBackground(HOVER_CARD_BG);
-                b.setForeground(HOVER_PINK_TXT);
-                b.setBorder(new CompoundBorder(
-                        new LineBorder(NEON_PINK, 2, true),
-                        new CompoundBorder(new LineBorder(Color.WHITE, 1, true), pad)
-                ));
-            }
-            @Override public void mouseExited(java.awt.event.MouseEvent e) {
-                b.setBackground(BASE_CARD_BG);
-                b.setForeground(Color.WHITE);
-                b.setBorder(new CompoundBorder(
-                        new LineBorder(NEON_PINK_DARK, 2, true),
-                        new CompoundBorder(new LineBorder(NEON_PINK, 1, true), pad)
-                ));
-            }
-        });
         b.setFont(new Font("Segoe UI", Font.BOLD, 14));
+    }
+
+    private void styleNeonPrimary(JButton b) {
+        styleNeonButton(b);
+        b.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        b.setPreferredSize(new Dimension(220, 56));
     }
 
     private void styleBackOutlined(JButton b) {
         b.setFocusPainted(false);
         b.setContentAreaFilled(false);
         b.setOpaque(false);
-        b.setForeground(new Color(220,220,220));
-        EmptyBorder pad = new EmptyBorder(6,12,6,12);
+        b.setForeground(new Color(220, 220, 220));
+        EmptyBorder pad = new EmptyBorder(6, 12, 6, 12);
         b.setBorder(new CompoundBorder(new LineBorder(Color.WHITE, 1, true), pad));
         b.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        b.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override public void mouseEntered(java.awt.event.MouseEvent e) {
-                b.setForeground(Color.WHITE);
-                b.setBorder(new CompoundBorder(new LineBorder(Color.WHITE, 2, true), pad));
-            }
-            @Override public void mouseExited(java.awt.event.MouseEvent e) {
-                b.setForeground(new Color(220,220,220));
-                b.setBorder(new CompoundBorder(new LineBorder(Color.WHITE, 1, true), pad));
-            }
-        });
     }
 
     private void styleInfoLabel(JLabel l) {
-        l.setForeground(new Color(235,235,235));
+        l.setForeground(new Color(235, 235, 235));
         l.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         l.setHorizontalAlignment(SwingConstants.CENTER);
+    }
+
+    private void runLikeAnimation(Runnable onDone) {
+        popUI.start(likeLayer, onDone);
+    }
+
+    private void runNopeAnimation(Runnable onDone) {
+        shakeUI.start(nopeLayer, onDone);
+    }
+
+    // --- Anim pop + éclats ---
+    private static class PopSparkLayerUI extends LayerUI<JComponent> implements ActionListener {
+        private Timer timer;
+        private long start;
+        private int duration = 420;
+        private float progress;
+        private JLayer<? extends JComponent> layer;
+        private Runnable onDone;
+
+        private final int SPARK_COUNT = 10;
+        private final double[] angles = new double[SPARK_COUNT];
+        private final double[] speed = new double[SPARK_COUNT];
+        private final Random rng = new Random();
+
+        void start(JLayer<? extends JComponent> layer, Runnable onDone) {
+            this.layer = layer;
+            this.onDone = onDone;
+            this.start = System.currentTimeMillis();
+            for (int i = 0; i < SPARK_COUNT; i++) {
+                angles[i] = rng.nextDouble() * Math.PI * 2;
+                speed[i] = 40 + rng.nextDouble() * 40;
+            }
+            if (timer != null && timer.isRunning()) timer.stop();
+            timer = new Timer(16, this);
+            timer.start();
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            long t = System.currentTimeMillis() - start;
+            progress = Math.min(1f, t / (float) duration);
+            if (layer != null) layer.repaint();
+            if (progress >= 1f) {
+                timer.stop();
+                if (onDone != null) SwingUtilities.invokeLater(onDone);
+            }
+        }
+
+        @Override
+        public void paint(Graphics g, JComponent c) {
+            JLayer<?> jlayer = (JLayer<?>) c;
+            JComponent view = (JComponent) jlayer.getView();
+
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            int w = view.getWidth(), h = view.getHeight();
+            int cx = w / 2, cy = h / 2;
+
+            double t = progress;
+            double s = t < 0.5 ? 1 + 0.1 * (t / 0.5) : 1.1 - 0.1 * ((t - 0.5) / 0.5);
+
+            AffineTransform old = g2.getTransform();
+            g2.translate(cx, cy);
+            g2.scale(s, s);
+            g2.translate(-cx, -cy);
+            view.paint(g2);
+            g2.setTransform(old);
+
+            float alpha = (float) (1.0 - progress);
+            for (int i = 0; i < SPARK_COUNT; i++) {
+                double ang = angles[i];
+                double radius = speed[i] * progress * 0.6;
+                int x = cx + (int) Math.round(Math.cos(ang) * radius);
+                int y = cy + (int) Math.round(Math.sin(ang) * radius);
+                int size = 4 + (int) (4 * (1.0 - progress));
+                g2.setColor(new Color(255, 64, 160, (int) (200 * alpha)));
+                g2.fillOval(x - size / 2, y - size / 2, size, size);
+            }
+            g2.dispose();
+        }
+    }
+
+    // --- Anim shake inchangé ---
+    private static class ShakeLayerUI extends LayerUI<JComponent> implements ActionListener {
+        private Timer timer;
+        private long start;
+        private int duration = 280;
+        private float progress;
+        private JLayer<? extends JComponent> layer;
+        private Runnable onDone;
+
+        void start(JLayer<? extends JComponent> layer, Runnable onDone) {
+            this.layer = layer;
+            this.onDone = onDone;
+            this.start = System.currentTimeMillis();
+            if (timer != null && timer.isRunning()) timer.stop();
+            timer = new Timer(16, this);
+            timer.start();
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            long t = System.currentTimeMillis() - start;
+            progress = Math.min(1f, t / (float) duration);
+            if (layer != null) layer.repaint();
+            if (progress >= 1f) {
+                timer.stop();
+                if (onDone != null) SwingUtilities.invokeLater(onDone);
+            }
+        }
+
+        @Override
+        public void paint(Graphics g, JComponent c) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            if (progress > 0f) {
+                double amp = 8.0 * (1.0 - progress);
+                double x = Math.sin(progress * Math.PI * 6) * amp;
+                g2.translate(x, 0);
+            }
+            super.paint(g2, c);
+            g2.dispose();
+        }
     }
 
     @Override
