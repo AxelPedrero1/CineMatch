@@ -69,8 +69,11 @@ public class HomePanel extends JPanel {
         listBtn.addActionListener(e -> navigate("t3"));
         JButton similarBtn = makeNeonCard("🎞️  Film similaire", Size.SMALL, false);
         similarBtn.addActionListener(e -> navigate("t1"));
+        JButton chatBtn = makeNeonCard("💬  Parler à l'IA", Size.SMALL, false);
+        chatBtn.addActionListener(e -> navigate("chat"));
         row.add(listBtn);
         row.add(similarBtn);
+        row.add(chatBtn);
         column.add(row);
 
         add(column, BorderLayout.CENTER);
@@ -150,5 +153,7 @@ public class HomePanel extends JPanel {
     }
 
     public void onNavigate(Consumer<String> nav) { this.navigator = nav; }
-    private void navigate(String id) { if (navigator != null) navigator.accept(id); }
+    private void navigate(String id) {
+        if (navigator != null) navigator.accept(id);
+    }
 }
