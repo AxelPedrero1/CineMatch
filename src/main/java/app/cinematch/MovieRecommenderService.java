@@ -8,17 +8,47 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.Optional;
 import java.util.Random;
+import java.util.function.BiConsumer;
 
+/**
+ * Service de recommandation de films.
+ * - Dialogue avec un client Ollama pour générer des propositions
+ * - Délègue la persistance (title,status) à un "sink" injectable (JsonStorage par défaut)
+ */
 public class MovieRecommenderService {
 
     private static final ObjectMapper PARSER = new ObjectMapper();
 
     private final OllamaClient ollama;
     private final Random random = new Random();
+    /** Point d'injection pour la persistance (title, status) -> void. */
+    private final BiConsumer<String, String> storageSink;
 
+    /* =========================
+       CONSTRUCTEURS
+       ========================= */
+
+    /** Constructeur "prod" : utilise JsonStorage.addOrUpdate par défaut. */
     public MovieRecommenderService(String baseUrl, String model) {
-        this.ollama = new OllamaClient(baseUrl, model);
+        this(new OllamaClient(baseUrl, model), JsonStorage::addOrUpdate);
     }
+
+    /** Constructeur "testable" : injecte le sink (ex: JsonStorageMock::addOrUpdate). */
+    public MovieRecommenderService(String baseUrl, String model,
+                                   BiConsumer<String, String> storageSink) {
+        this(new OllamaClient(baseUrl, model), storageSink);
+    }
+
+    /** Constructeur avancé : injecte directement l'OllamaClient et le sink. */
+    public MovieRecommenderService(OllamaClient ollama,
+                                   BiConsumer<String, String> storageSink) {
+        this.ollama = ollama;
+        this.storageSink = (storageSink != null) ? storageSink : JsonStorage::addOrUpdate;
+    }
+
+    /* =========================
+       API PUBLIQUE
+       ========================= */
 
     public Recommendation recommendFromLike(String likedTitle) {
         String system = "Tu es un assistant cinéma ultra créatif. Tu connais les films existants et tu peux aussi imaginer " +
@@ -28,6 +58,8 @@ public class MovieRecommenderService {
                 " Le pitch doit faire le lien avec le film donné.";
 
         Recommendation rec = requestRecommendation(system, user, "Inspiré de " + likedTitle);
+
+        // S'assurer que le pitch mentionne le film aimé
         String reason = rec.reason();
         if (!reason.toLowerCase().contains(likedTitle.toLowerCase())) {
             reason = reason + " — Inspiré de " + likedTitle;
@@ -49,9 +81,14 @@ public class MovieRecommenderService {
         return ollama.chat(system, user);
     }
 
+    /** Marque un film avec un statut (envie, liked, deja_vu, etc.). */
     public void mark(String title, String status) {
-        JsonStorage.addOrUpdate(title, status);
+        storageSink.accept(title, status);
     }
+
+    /* =========================
+       INTERNE / UTILITAIRES
+       ========================= */
 
     private Recommendation requestRecommendation(String system, String user, String defaultReason) {
         String raw = ollama.chat(system, user).trim();
