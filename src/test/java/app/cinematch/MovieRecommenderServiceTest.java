@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests unitaires de MovieRecommenderService.
  * Style BDD (Given / When / Then) avec commentaires explicatifs.
  */
-class MovieRecommenderServiceTest {
+public class MovieRecommenderServiceTest {
 
     // Méthode utilitaire pour instancier le service
     private MovieRecommenderService newService() {
