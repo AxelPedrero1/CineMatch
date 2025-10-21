@@ -2,7 +2,7 @@ package app.cinematch;
 
 import app.cinematch.api.OllamaClient;
 import app.cinematch.model.Recommendation;
-import app.cinematch.util.JsonStorage;
+import app.cinematch.util.JsonStorageMock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -26,7 +26,7 @@ public class MovieRecommenderServiceTest {
     @AfterEach
     void tearDown() {
         OllamaClient.RESPONSES.clear();
-        JsonStorage.reset();
+        JsonStorageMock.reset();
     }
 
     // -------------------------------------------------------------------------
@@ -168,16 +168,17 @@ public class MovieRecommenderServiceTest {
 
     @Test
     void givenTitleAndStatus_whenMark_thenDelegatesToJsonStorage() {
-        // GIVEN  on veut marquer un film comme "aimé".
-        MovieRecommenderService service = newService();
+        MovieRecommenderService service = new MovieRecommenderService(
+                "http://localhost:11434", "qwen2.5",
+                app.cinematch.util.JsonStorageMock::addOrUpdate // ✅ injection du mock
+        );
 
-        // WHEN  on appelle mark().
         service.mark("Inception", "liked");
 
-        // THEN  JsonStorage reçoit les bons paramètres.
-        assertEquals("Inception", JsonStorage.lastTitle);
-        assertEquals("liked", JsonStorage.lastStatus);
+        assertEquals("Inception", app.cinematch.util.JsonStorageMock.lastTitle);
+        assertEquals("liked", app.cinematch.util.JsonStorageMock.lastStatus);
     }
+
 
     @Test
     void givenAllNullOrBlankValues_whenFirstNonBlank_thenReturnsEmptyString() throws Exception {

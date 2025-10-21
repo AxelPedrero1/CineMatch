@@ -4,7 +4,7 @@ import app.cinematch.model.HistoryEntry;
 import java.util.ArrayList;
 import java.util.List;
 
-public class JsonStorage {
+public class JsonStorageMock {
     private static List<HistoryEntry> mockHistory = new ArrayList<>();
     public static void reset() { mockHistory.clear(); }
     public static void setMockHistory(List<HistoryEntry> entries) {
