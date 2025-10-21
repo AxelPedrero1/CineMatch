@@ -2,7 +2,6 @@ package app.cinematch.ui.swing;
 
 import app.cinematch.MovieRecommenderService;
 import app.cinematch.model.Recommendation;
-import app.cinematch.util.ImageLoader;
 
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
@@ -17,7 +16,6 @@ public class Tool1Panel extends JPanel {
 
     private final JTextField input = new JTextField();
     private final JButton propose = new JButton("Proposer");
-    private final JLabel poster = new JLabel("", SwingConstants.CENTER);
     private final JLabel title = new JLabel("—", SwingConstants.CENTER);
     private final JLabel reason = new JLabel("—", SwingConstants.CENTER);
     private final JLabel platform = new JLabel("—", SwingConstants.CENTER);
@@ -119,11 +117,6 @@ public class Tool1Panel extends JPanel {
                     title.setText(current.title());
                     reason.setText(current.reason());
                     platform.setText(current.platform());
-                    if (current.posterUrl() != null) {
-                        poster.setIcon(ImageLoader.loadPoster(current.posterUrl(), 400, 500));
-                    } else {
-                        poster.setIcon(null);
-                    }
                     startDescriptionForCurrent();
                 } catch (Exception ex) {
                     title.setText("Erreur: " + ex.getMessage());

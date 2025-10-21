@@ -2,7 +2,6 @@ package app.cinematch.ui.swing;
 
 import app.cinematch.MovieRecommenderService;
 import app.cinematch.model.Recommendation;
-import app.cinematch.util.ImageLoader;
 import app.cinematch.util.JsonStorage;
 
 import javax.swing.*;
@@ -14,7 +13,6 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.geom.AffineTransform;
-import java.awt.geom.RoundRectangle2D;
 import java.util.Random;
 
 public class Tool2Panel extends JPanel {
@@ -25,7 +23,6 @@ public class Tool2Panel extends JPanel {
     private final JEditorPane descPane = new JEditorPane("text/html", "");
     private SwingWorker<String, Void> descWorker;
 
-    private final JLabel poster = new JLabel("", SwingConstants.CENTER);
     private final JLabel title = new JLabel("—", SwingConstants.CENTER);
     private final JLabel reason = new JLabel("—", SwingConstants.CENTER);
     private final JLabel platform = new JLabel("—", SwingConstants.CENTER);
@@ -141,9 +138,6 @@ public class Tool2Panel extends JPanel {
                     title.setText(current.title());
                     reason.setText(current.reason());
                     platform.setText(current.platform());
-                    poster.setIcon(current.posterUrl() != null
-                            ? ImageLoader.loadPoster(current.posterUrl(), 400, 500)
-                            : null);
                     startDescriptionForCurrent();
                 } catch (Exception ex) {
                     title.setText("Erreur: " + ex.getMessage());

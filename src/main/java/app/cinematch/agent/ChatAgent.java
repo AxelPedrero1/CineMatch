@@ -45,7 +45,7 @@ public class ChatAgent {
 
         - Ne repropose jamais un film déjà vu ou marqué comme "pas intéressé".
         - Inspire-toi des films aimés pour proposer des recommandations cohérentes et variées.
-        - Si tu cites un film, assure-toi qu’il existe réellement (existant sur IMDb ou TMDB).
+        - Si tu cites un film, assure-toi qu’il existe réellement (existant sur IMDb ou un site de référence fiable).
         - Si l’utilisateur te demande quels films il a vus, veux voir ou n’aime pas, réponds à partir de ces listes.
         - Si une liste est vide, ignore-la naturellement dans ta réponse.
 

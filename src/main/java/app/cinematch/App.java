@@ -20,12 +20,10 @@ public class App {
             // 🔹 Variables d'environnement
             String ollamaUrl = System.getenv().getOrDefault("OLLAMA_BASE_URL", "http://localhost:11434");
             String ollamaModel = System.getenv().getOrDefault("OLLAMA_MODEL", "qwen2.5:7b-instruct");
-            String tmdbKey = System.getenv("TMDB_API_KEY");
-            String tmdbRegion = System.getenv().getOrDefault("TMDB_REGION", "FR");
 
             // 🔹 Service de recommandation existant
             MovieRecommenderService recommender = new MovieRecommenderService(
-                    ollamaUrl, ollamaModel, tmdbKey, tmdbRegion
+                    ollamaUrl, ollamaModel
             );
 
             // 🔹 Nouvel agent IA avec profil et mémoire persistante
