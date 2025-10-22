@@ -7,14 +7,15 @@ import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import java.awt.*;
+import java.util.function.Consumer;
 
 /**
  * Panneau de discussion directe avec l'IA (ChatAgent)
  */
 public class Tool4Panel extends JPanel {
 
-    private final MainFrame parentFrame;
-    private final ChatAgent agent;
+    private final Consumer<String> navigator;   // au lieu de stocker MainFrame
+    private final ChatAgent agent;              // injecté directement
 
     private final JTextArea conversationArea = new JTextArea();
     private final JTextField inputField = new JTextField();
@@ -30,19 +31,22 @@ public class Tool4Panel extends JPanel {
     private final Color BG_BOTTOM = new Color(35, 20, 40);
     private final Color TEXT_DIM = new Color(220, 220, 220);
 
-    public Tool4Panel(MainFrame parent) {
-        this.parentFrame = parent;
-        this.agent = parent.getAgent();
+    // Nouveau constructeur : injecte l’agent et un callback de navigation
+    public Tool4Panel(ChatAgent agent, Consumer<String> navigator) {
+        this.agent = agent;
+        this.navigator = navigator;
 
         setLayout(new BorderLayout(10, 10));
         setOpaque(false);
         setBorder(new EmptyBorder(16, 20, 20, 20));
 
-        // 🧭 Barre supérieure
+        // Barre supérieure
         JPanel topBar = new JPanel(new BorderLayout());
         topBar.setOpaque(false);
         styleBackOutlined(backButton);
-        backButton.addActionListener(e -> parentFrame.showCard("home"));
+        backButton.addActionListener(e -> {
+            if (navigator != null) navigator.accept("home");
+        });
         JLabel title = new JLabel("💬 Discussion IA", SwingConstants.CENTER);
         title.setForeground(Color.WHITE);
         title.setFont(new Font("Segoe UI Emoji", Font.BOLD, 20));
@@ -50,7 +54,7 @@ public class Tool4Panel extends JPanel {
         topBar.add(title, BorderLayout.CENTER);
         add(topBar, BorderLayout.NORTH);
 
-        // 💬 Zone de conversation
+        // Zone de conversation
         conversationArea.setEditable(false);
         conversationArea.setWrapStyleWord(true);
         conversationArea.setLineWrap(true);
@@ -65,7 +69,7 @@ public class Tool4Panel extends JPanel {
         scroll.getViewport().setOpaque(false);
         add(scroll, BorderLayout.CENTER);
 
-        // 📝 Zone d'entrée utilisateur
+        // Zone d’entrée
         JPanel inputPanel = new JPanel(new BorderLayout(8, 8));
         inputPanel.setOpaque(false);
         styleTextField(inputField);
@@ -74,7 +78,7 @@ public class Tool4Panel extends JPanel {
         inputPanel.add(sendButton, BorderLayout.EAST);
         add(inputPanel, BorderLayout.SOUTH);
 
-        // 🚀 Action d’envoi
+        // Actions
         sendButton.addActionListener(e -> sendMessage());
         inputField.addActionListener(e -> sendMessage());
     }
@@ -91,7 +95,6 @@ public class Tool4Panel extends JPanel {
             @Override protected String doInBackground() {
                 return agent.ask(userText);
             }
-
             @Override protected void done() {
                 try {
                     String response = get();
@@ -109,6 +112,7 @@ public class Tool4Panel extends JPanel {
         conversationArea.append(msg);
         conversationArea.setCaretPosition(conversationArea.getDocument().getLength());
     }
+
 
     private void styleNeonButton(JButton b) {
         b.setFocusPainted(false);

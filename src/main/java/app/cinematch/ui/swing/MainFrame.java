@@ -12,7 +12,6 @@ public class MainFrame extends JFrame {
     private final JPanel container = new JPanel(cards);
 
     private final MovieRecommenderService service;
-    private final ChatAgent agent;
 
     /**
      * Nouveau constructeur principal : accepte à la fois
@@ -21,7 +20,6 @@ public class MainFrame extends JFrame {
     public MainFrame(MovieRecommenderService service, ChatAgent agent) {
         super("CineMatch 🎬 Deluxe");
         this.service = service;
-        this.agent = agent;
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1000, 650);
@@ -32,7 +30,7 @@ public class MainFrame extends JFrame {
         Tool1Panel t1 = new Tool1Panel(service, this);
         Tool2Panel t2 = new Tool2Panel(service, this);
         Tool3Panel t3 = new Tool3Panel(service, this);
-        Tool4Panel chat = new Tool4Panel(this);
+        Tool4Panel chat = new Tool4Panel(agent, this::showCard);
         HistoryPanel hist = new HistoryPanel(service, this);
 
         // Ajouter les vues
@@ -64,12 +62,6 @@ public class MainFrame extends JFrame {
         ((CardLayout) getContentPane().getLayout()).show(getContentPane(), id);
     }
 
-    /**
-     * Accès à l'agent IA.
-     */
-    public ChatAgent getAgent() {
-        return agent;
-    }
 
     /**
      * Accès au service de recommandation
