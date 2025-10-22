@@ -29,7 +29,7 @@ public class MainFrame extends JFrame {
         HomePanel home = new HomePanel(this);
         Tool1Panel t1 = new Tool1Panel(service, this);
         Tool2Panel t2 = new Tool2Panel(service, this);
-        Tool3Panel t3 = new Tool3Panel(service, this);
+        Tool3Panel t3 = new Tool3Panel(service, this::showCard);
         Tool4Panel chat = new Tool4Panel(agent, this::showCard);
         HistoryPanel hist = new HistoryPanel(service, this);
 
