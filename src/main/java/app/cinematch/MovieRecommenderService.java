@@ -6,6 +6,7 @@ import app.cinematch.util.JsonStorage;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
 import java.util.Optional;
 import java.util.Random;
 import java.util.function.BiConsumer;
@@ -109,14 +110,14 @@ public class MovieRecommenderService {
         String json = extractJsonObject(raw);
         if (json == null) return new ParsedRecommendation();
         try {
-            JsonNode node = PARSER.readTree(json);
+            JsonNode node = PARSER.readTree(json); // peut lancer JsonProcessingException (IOException)
             ParsedRecommendation parsed = new ParsedRecommendation();
             parsed.title = Optional.ofNullable(node.get("title")).map(JsonNode::asText).orElse(null);
             parsed.pitch = Optional.ofNullable(node.get("pitch")).map(JsonNode::asText).orElse(null);
             parsed.year = Optional.ofNullable(node.get("year")).map(JsonNode::asText).orElse(null);
             parsed.platform = Optional.ofNullable(node.get("platform")).map(JsonNode::asText).orElse(null);
             return parsed;
-        } catch (Exception ignored) {
+        } catch (IOException e) {
             return new ParsedRecommendation();
         }
     }

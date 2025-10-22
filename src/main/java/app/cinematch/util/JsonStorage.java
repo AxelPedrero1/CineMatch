@@ -39,9 +39,28 @@ public class JsonStorage {
     }
 
     public static synchronized void saveAll(List<HistoryEntry> all) {
+        File parentDir = FILE.getParentFile();
+        if (parentDir != null && !parentDir.exists()) {
+            boolean created = parentDir.mkdirs();
+            if (!created && !parentDir.exists()) {
+                // Journalisation minimale, conforme Checkstyle
+                System.err.printf(
+                        "[JsonStorage] Échec de la création du répertoire : %s%n",
+                        parentDir.getAbsolutePath()
+                );
+            }
+        }
+
         try {
-            FILE.getParentFile().mkdirs();
             MAPPER.writerWithDefaultPrettyPrinter().writeValue(FILE, all);
-        } catch (IOException ignored) {}
+        } catch (IOException e) {
+            // On ne relance pas l’erreur, mais on la log pour éviter SpotBugs DE_MIGHT_IGNORE
+            System.err.printf(
+                    "[JsonStorage] Erreur lors de l’écriture du fichier %s : %s%n",
+                    FILE.getAbsolutePath(),
+                    e.getMessage()
+            );
+        }
     }
+
 }

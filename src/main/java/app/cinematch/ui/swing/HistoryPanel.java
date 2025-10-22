@@ -15,11 +15,9 @@ public class HistoryPanel extends JPanel {
     private final JButton refresh = new JButton("↻ Rafraîchir");
     private final JButton backBtn = new JButton("⬅ Retour au menu");
 
-    private final MainFrame parentFrame;
 
     public HistoryPanel(app.cinematch.MovieRecommenderService service, MainFrame parent) {
-        this.parentFrame = parent;
-        setLayout(new BorderLayout(10,10));
+            setLayout(new BorderLayout(10,10));
 
         // --- Barre du haut ---
         JPanel topBar = new JPanel(new BorderLayout());
@@ -38,7 +36,7 @@ public class HistoryPanel extends JPanel {
         add(bottom, BorderLayout.SOUTH);
 
         // --- Actions ---
-        backBtn.addActionListener(e -> parentFrame.showCard("home"));
+        backBtn.addActionListener(e -> parent.showCard("home"));
         refresh.addActionListener(e -> loadHistory());
 
         // --- Chargement initial ---
