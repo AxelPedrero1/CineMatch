@@ -29,7 +29,8 @@ final class Tool2PanelTest {
     void constructor_buildsMainComponents() throws Exception {
         // Given
         final MovieRecommenderService service = mock(MovieRecommenderService.class);
-        final MainFrame parent = mock(MainFrame.class);
+        final java.util.function.Consumer<String> parent = mock(java.util.function.Consumer.class);
+
 
         try (MockedStatic<JsonStorage> ignored = mockStatic(JsonStorage.class)) {
             // When
@@ -54,7 +55,7 @@ final class Tool2PanelTest {
     void html_isEscaped_andSetIntoPane() throws Exception {
         // Given
         final MovieRecommenderService service = mock(MovieRecommenderService.class);
-        final MainFrame parent = mock(MainFrame.class);
+        final java.util.function.Consumer<String> parent = mock(java.util.function.Consumer.class);
 
         final Tool2Panel[] ref = new Tool2Panel[1];
         SwingUtilities.invokeAndWait(() -> ref[0] = new Tool2Panel(service, parent));
@@ -86,7 +87,7 @@ final class Tool2PanelTest {
     @DisplayName("Clic 'Je veux voir' -> service.mark(title,'envie')")
     void likeButton_marksEnvie() throws Exception {
         final MovieRecommenderService service = mock(MovieRecommenderService.class);
-        final MainFrame parent = mock(MainFrame.class);
+        final java.util.function.Consumer<String> parent = mock(java.util.function.Consumer.class);
         final Recommendation rec = mock(Recommendation.class);
         when(rec.title()).thenReturn("Matrix");
 
@@ -110,7 +111,7 @@ final class Tool2PanelTest {
     @DisplayName("Clic 'Pas intéressé' -> service.mark(title,'pas_interesse')")
     void nopeButton_marksPasInteresse() throws Exception {
         final MovieRecommenderService service = mock(MovieRecommenderService.class);
-        final MainFrame parent = mock(MainFrame.class);
+        final java.util.function.Consumer<String> parent = mock(java.util.function.Consumer.class);
         final Recommendation rec = mock(Recommendation.class);
         when(rec.title()).thenReturn("Film Random");
 
@@ -134,7 +135,8 @@ final class Tool2PanelTest {
     void seenButton_marksDejaVu() throws Exception {
         // Given
         final MovieRecommenderService service = mock(MovieRecommenderService.class);
-        final MainFrame parent = mock(MainFrame.class);
+        final java.util.function.Consumer<String> parent = mock(java.util.function.Consumer.class);
+
         final Recommendation rec = mock(Recommendation.class);
         when(rec.title()).thenReturn("Amélie");
 
