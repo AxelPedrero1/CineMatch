@@ -45,8 +45,10 @@ public final class Tool1Panel extends JPanel {
     private static final Color BG_BOTTOM = new Color(35, 20, 40);
     private static final Color TEXT_DIM = new Color(220, 220, 220);
 
-    private final MovieRecommenderService service;
-    private final Consumer<String> navigator;
+    private transient MovieRecommenderService service;
+    private transient java.util.function.Consumer<String> navigator;
+    private transient Recommendation current;
+
 
     private final JTextField input = new JTextField();
     private final JButton propose = new JButton("Proposer");
@@ -55,12 +57,13 @@ public final class Tool1Panel extends JPanel {
     private final JLabel platform = new JLabel("—", SwingConstants.CENTER);
     private final JEditorPane descPane = new JEditorPane("text/html", "");
 
-    private SwingWorker<String, Void> descWorker;
+    private transient SwingWorker<String, Void> descWorker;
     private final JButton addWishlist = new JButton("Ajouter à ma liste");
     private final JButton descBtn = new JButton("Régénérer description");
     private final JButton backBtn = new JButton("Retour");
 
-    private Recommendation current;
+
+
 
     /**
      * Constructeur principal.
@@ -155,6 +158,14 @@ public final class Tool1Panel extends JPanel {
                       final app.cinematch.ui.swing.MainFrame parent) {
         this(service,
                 Objects.requireNonNull(parent, "parent must not be null")::showCard);
+    }
+
+    @Override
+    public void removeNotify() {
+        if (descWorker != null && !descWorker.isDone()) {
+            descWorker.cancel(true);
+        }
+        super.removeNotify();
     }
 
     /**
