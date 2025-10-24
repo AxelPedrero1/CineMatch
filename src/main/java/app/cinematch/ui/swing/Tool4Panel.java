@@ -25,39 +25,70 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 
 /**
- * Panneau de discussion directe avec l'IA (ChatAgent).
- * <p>
- * Ne stocke aucun objet externe mutable : on conserve uniquement
- * une "capacité" fonctionnelle (askFn) et un callback de navigation.
- * </p>
+ * Panneau de discussion directe avec l’IA ({@link ChatAgent}) via une interface simple.
+ *
+ * <p>Le composant affiche une zone de conversation, un champ de saisie et un bouton
+ * d’envoi. Les appels au modèle sont réalisés de manière asynchrone avec {@link SwingWorker}
+ * afin de ne pas bloquer l’EDT.</p>
+ *
+ * <p>Conception : le panneau ne conserve pas d’instance mutable externe du domaine ;
+ * il stocke uniquement une « capacité » fonctionnelle via {@link #askFn} et un
+ * callback de navigation via {@link #navigator}.</p>
+ *
+ * <p>Exemple d’intégration :
+ * <pre>{@code
+ * Tool4Panel chat = new Tool4Panel(agent::ask, frame::showCard);
+ * frame.setContentPane(chat);
+ * }</pre>
  */
 public final class Tool4Panel extends JPanel {
 
-    /** Couleurs (constantes et immuables). */
+    // --- Thème (constantes immuables) ---
+
+    /** Couleur néon rose principale. */
     private static final Color NEON_PINK = new Color(255, 64, 160);
+    /** Variante sombre du néon rose. */
     private static final Color NEON_PINK_DARK = new Color(200, 30, 120);
+    /** Couleur de texte au survol. */
     private static final Color HOVER_PINK_TXT = new Color(255, 210, 230);
+    /** Couleur de fond par défaut des cartes. */
     private static final Color BASE_CARD_BG = new Color(30, 30, 40);
+    /** Couleur de fond des cartes au survol. */
     private static final Color HOVER_CARD_BG = new Color(50, 40, 60);
+    /** Couleur haute du dégradé d’arrière-plan. */
     private static final Color BG_TOP = new Color(18, 18, 24);
+    /** Couleur basse du dégradé d’arrière-plan. */
     private static final Color BG_BOTTOM = new Color(35, 20, 40);
+    /** Couleur de texte secondaire. */
     private static final Color TEXT_DIM = new Color(220, 220, 220);
+
+    // --- Dépendances fonctionnelles ---
 
     /** Callback de navigation (ex. parent::showCard). */
     private final Consumer<String> navigator;
-    /** Capacité pour poser une question et obtenir la réponse. */
+    /**
+     * Capacité fonctionnelle pour poser une question et obtenir une réponse de l’IA.
+     * Signature : {@code askFn.apply(input) -> réponse}.
+     */
     private final Function<String, String> askFn;
 
+    // --- UI ---
+
+    /** Zone d’historique de la conversation. */
     private final JTextArea conversationArea = new JTextArea();
+    /** Champ de saisie du message utilisateur. */
     private final JTextField inputField = new JTextField();
+    /** Bouton d’envoi du message. */
     private final JButton sendButton = new JButton("Envoyer");
+    /** Bouton retour vers l’écran d’accueil. */
     private final JButton backButton = new JButton("Retour");
 
     /**
-     * Constructeur recommandé : passe une fonction "ask" et un callback de navigation.
+     * Constructeur recommandé : accepte une fonction « ask » et un callback de navigation.
      *
-     * @param askFunction fonction qui prend l'entrée utilisateur et renvoie la réponse
-     * @param navigationCallback callback pour changer d'écran (ex. id -> "home")
+     * @param askFunction        fonction qui prend l’entrée utilisateur et renvoie la réponse
+     * @param navigationCallback callback pour changer d’écran (ex. id → {@code "home"})
+     * @throws NullPointerException si un des paramètres est {@code null}
      */
     public Tool4Panel(final Function<String, String> askFunction,
                       final Consumer<String> navigationCallback) {
@@ -68,16 +99,22 @@ public final class Tool4Panel extends JPanel {
     }
 
     /**
-     * Constructeur de confort : accepte un ChatAgent, mais ne le stocke pas.
+     * Constructeur de confort : accepte un {@link ChatAgent} mais ne le stocke pas.
+     * La méthode de question/réponse est capturée via référence de méthode.
      *
-     * @param agent agent de discussion (référence non conservée)
-     * @param navigationCallback callback pour changer d'écran
+     * @param agent              agent de discussion (référence non conservée)
+     * @param navigationCallback callback pour changer d’écran
+     * @throws NullPointerException si un des paramètres est {@code null}
      */
     public Tool4Panel(final ChatAgent agent, final Consumer<String> navigationCallback) {
         this(Objects.requireNonNull(agent, "agent must not be null")::ask,
                 Objects.requireNonNull(navigationCallback, "navigationCallback must not be null"));
     }
 
+    /**
+     * Construit l’interface : barre supérieure, zone de conversation et zone d’entrée.
+     * Applique les styles et connecte les actions.
+     */
     private void buildUi() {
         setLayout(new BorderLayout(10, 10));
         setOpaque(false);
@@ -113,7 +150,7 @@ public final class Tool4Panel extends JPanel {
         scroll.getViewport().setOpaque(false);
         add(scroll, BorderLayout.CENTER);
 
-        // Zone d'entrée
+        // Zone d’entrée
         final JPanel inputPanel = new JPanel(new BorderLayout(8, 8));
         inputPanel.setOpaque(false);
         styleTextField(inputField);
@@ -127,6 +164,10 @@ public final class Tool4Panel extends JPanel {
         inputField.addActionListener(e -> sendMessage());
     }
 
+    /**
+     * Envoie le message utilisateur de manière asynchrone et affiche la réponse de l’IA.
+     * Protège l’UI en désactivant temporairement le bouton d’envoi.
+     */
     private void sendMessage() {
         final String userText = inputField.getText().trim();
         if (userText.isEmpty()) {
@@ -158,11 +199,21 @@ public final class Tool4Panel extends JPanel {
         }.execute();
     }
 
+    /**
+     * Ajoute un message à la zone de conversation et fait défiler jusqu’en bas.
+     *
+     * @param msg message à appendre (peut contenir des sauts de ligne)
+     */
     private void appendMessage(final String msg) {
         conversationArea.append(msg);
         conversationArea.setCaretPosition(conversationArea.getDocument().getLength());
     }
 
+    /**
+     * Style « néon » pour un bouton (couleurs, bordures composées et effet au survol).
+     *
+     * @param button bouton à styliser
+     */
     private void styleNeonButton(final JButton button) {
         button.setFocusPainted(false);
         button.setForeground(Color.WHITE);
@@ -197,6 +248,11 @@ public final class Tool4Panel extends JPanel {
         button.setFont(new Font("Segoe UI", Font.BOLD, 14));
     }
 
+    /**
+     * Style « outlined » pour le bouton Retour (texte pâle + contour).
+     *
+     * @param button bouton à styliser
+     */
     private void styleBackOutlined(final JButton button) {
         button.setFocusPainted(false);
         button.setContentAreaFilled(false);
@@ -220,6 +276,11 @@ public final class Tool4Panel extends JPanel {
         });
     }
 
+    /**
+     * Style du champ texte (couleurs, bordure et police).
+     *
+     * @param tf champ à styliser
+     */
     private void styleTextField(final JTextField tf) {
         tf.setForeground(Color.WHITE);
         tf.setCaretColor(Color.WHITE);
@@ -231,6 +292,11 @@ public final class Tool4Panel extends JPanel {
         tf.setFont(new Font("Segoe UI", Font.PLAIN, 14));
     }
 
+    /**
+     * Dessine le fond en dégradé vertical du panneau.
+     *
+     * @param g contexte graphique
+     */
     @Override
     protected void paintComponent(final Graphics g) {
         super.paintComponent(g);
@@ -242,7 +308,15 @@ public final class Tool4Panel extends JPanel {
         g2.dispose();
     }
 
-    // Utilitaire simple si besoin futur (évite BorderFactory warnings/complexité).
+    /**
+     * Utilitaire de composition de bordure (exemple simple), si besoin futur.
+     * Évite une dépendance directe à {@link BorderFactory} pour chaque appel.
+     *
+     * @param color     couleur du contour
+     * @param thickness épaisseur du contour
+     * @param pad       marge intérieure
+     * @return une {@link CompoundBorder} composée
+     */
     @SuppressWarnings("unused")
     private static CompoundBorder compound(final Color color, final int thickness,
                                            final EmptyBorder pad) {

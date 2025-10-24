@@ -20,45 +20,101 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.function.Consumer;
-import javax.swing.*;
+import javax.swing.JButton;
 import javax.swing.JComponent;
+import javax.swing.JEditorPane;
+import javax.swing.JLayer;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.plaf.LayerUI;
 
+/**
+ * Panneau « Swipe » permettant d’afficher des recommandations aléatoires,
+ * d’indiquer une préférence (envie / pas intéressé / déjà vu) et de générer
+ * une description courte, avec de petites animations visuelles.
+ *
+ * <p>Fonctionnalités :</p>
+ * <ul>
+ *   <li>Proposition aléatoire d’un film via {@link MovieRecommenderService#recommendRandom()}</li>
+ *   <li>Marquage « envie », « pas intéressé » ou « déjà vu »</li>
+ *   <li>Génération asynchrone d’une description via {@link SwingWorker}</li>
+ *   <li>Animations : « pop + sparks » (like) et « shake » (nope)</li>
+ * </ul>
+ *
+ * <p>Conçu pour ne pas bloquer l’EDT, avec annulation des workers si nécessaire,
+ * et un style visuel cohérent (thème « néon » + dégradé de fond).</p>
+ */
 public final class Tool2Panel extends JPanel {
 
+    /** Service de recommandation. */
     private final MovieRecommenderService service;
+    /** Callback de navigation (ex. {@code "home"}). */
     private final Consumer<String> navigator;
 
+    /** Zone HTML affichant la description. */
     private final JEditorPane descPane = new JEditorPane("text/html", "");
+    /** Worker asynchrone pour la génération de description. */
     private SwingWorker<String, Void> descWorker;
 
+    /** Titre recommandé. */
     private final JLabel title = new JLabel("—", SwingConstants.CENTER);
+    /** Raison de la recommandation. */
     private final JLabel reason = new JLabel("—", SwingConstants.CENTER);
+    /** Plateforme de visionnage (si disponible). */
     private final JLabel platform = new JLabel("—", SwingConstants.CENTER);
 
+    /** Bouton « je veux voir » (envie). */
     private final JButton likeBtn = new JButton("Je veux voir");
+    /** Bouton « pas intéressé ». */
     private final JButton nopeBtn = new JButton("Pas intéressé");
+    /** Bouton « déjà vu ». */
     private final JButton seenBtn = new JButton("Déjà vu");
+    /** Bouton retour. */
     private final JButton backBtn = new JButton("Retour");
 
+    /** UI de couche pour l’animation « pop + étincelles ». */
     private final PopSparkLayerUI popUI = new PopSparkLayerUI();
+    /** UI de couche pour l’animation « shake ». */
     private final ShakeLayerUI shakeUI = new ShakeLayerUI();
+    /** Couche appliquée au bouton like. */
     private final JLayer<JComponent> likeLayer = new JLayer<>(likeBtn, popUI);
+    /** Couche appliquée au bouton nope. */
     private final JLayer<JComponent> nopeLayer = new JLayer<>(nopeBtn, shakeUI);
 
+    /** Recommandation courante. */
     private Recommendation current;
 
+    // --- Thème ---
+
+    /** Couleur néon rose principale. */
     private static final Color NEON_PINK = new Color(255, 64, 160);
+    /** Variante plus sombre du néon rose. */
     private static final Color NEON_PINK_DARK = new Color(200, 30, 120);
+    /** Couleur du texte au survol. */
     private static final Color HOVER_PINK_TXT = new Color(255, 210, 230);
+    /** Couleur de fond des cartes par défaut. */
     private static final Color BASE_CARD_BG = new Color(30, 30, 40);
+    /** Couleur de fond des cartes au survol. */
     private static final Color HOVER_CARD_BG = new Color(50, 40, 60);
+    /** Couleur haute du dégradé d’arrière-plan. */
     private static final Color BG_TOP = new Color(18, 18, 24);
+    /** Couleur basse du dégradé d’arrière-plan. */
     private static final Color BG_BOTTOM = new Color(35, 20, 40);
 
+    /**
+     * Construit le panneau « Swipe » et installe l’interface, les styles et les actions.
+     *
+     * @param service   service de recommandation (non {@code null})
+     * @param navigator callback de navigation (ex. {@code "home"}) (non {@code null})
+     * @throws NullPointerException si {@code service} ou {@code navigator} est {@code null}
+     */
     public Tool2Panel(final MovieRecommenderService service,
                       final Consumer<String> navigator) {
         this.service = Objects.requireNonNull(service, "service must not be null");
@@ -68,6 +124,7 @@ public final class Tool2Panel extends JPanel {
         setOpaque(false);
         setBorder(new EmptyBorder(16, 20, 20, 20));
 
+        // --- Barre du haut : retour ---
         final JPanel topBar = new JPanel(new BorderLayout());
         topBar.setOpaque(false);
 
@@ -79,6 +136,7 @@ public final class Tool2Panel extends JPanel {
         topBar.add(leftTop, BorderLayout.WEST);
         add(topBar, BorderLayout.NORTH);
 
+        // --- Centre : titre + description + infos ---
         title.setFont(title.getFont().deriveFont(Font.BOLD, 24f));
         title.setForeground(Color.WHITE);
 
@@ -104,6 +162,7 @@ public final class Tool2Panel extends JPanel {
         center.add(info, BorderLayout.SOUTH);
         add(center, BorderLayout.CENTER);
 
+        // --- Bas : actions + CTA secondaire ---
         final JPanel footer = new JPanel(new BorderLayout());
         footer.setOpaque(false);
 
@@ -123,13 +182,19 @@ public final class Tool2Panel extends JPanel {
 
         add(footer, BorderLayout.SOUTH);
 
+        // --- Actions ---
         likeBtn.addActionListener(e -> onLike());
         nopeBtn.addActionListener(e -> onNope());
         seenBtn.addActionListener(e -> onSeen());
 
+        // Première proposition
         proposeNext();
     }
 
+    /**
+     * Propose la prochaine recommandation (aléatoire), en évitant de reproposer trop souvent
+     * un film déjà dans « envie ». Met à jour l’UI et lance la génération de description.
+     */
     private void proposeNext() {
         setBusy(true);
         if (descWorker != null && !descWorker.isDone()) {
@@ -166,6 +231,10 @@ public final class Tool2Panel extends JPanel {
         }.execute();
     }
 
+    /**
+     * Démarre la génération asynchrone de la description pour la recommandation courante
+     * et protège contre les courses d’états (annule l’ancien worker, vérifie le titre).
+     */
     private void startDescriptionForCurrent() {
         if (current == null) {
             return;
@@ -201,6 +270,10 @@ public final class Tool2Panel extends JPanel {
         descWorker.execute();
     }
 
+    /**
+     * Marque la recommandation courante comme « envie » et lance l’animation « like ».
+     * En fin d’animation, affiche une nouvelle proposition.
+     */
     private void onLike() {
         if (current == null) {
             return;
@@ -213,6 +286,10 @@ public final class Tool2Panel extends JPanel {
         });
     }
 
+    /**
+     * Marque la recommandation courante comme « pas intéressé » et lance l’animation « shake ».
+     * En fin d’animation, affiche une nouvelle proposition.
+     */
     private void onNope() {
         if (current == null) {
             return;
@@ -225,6 +302,9 @@ public final class Tool2Panel extends JPanel {
         });
     }
 
+    /**
+     * Marque la recommandation courante comme « déjà vu » et propose directement la suivante.
+     */
     private void onSeen() {
         if (current == null) {
             return;
@@ -233,6 +313,11 @@ public final class Tool2Panel extends JPanel {
         proposeNext();
     }
 
+    /**
+     * Active/désactive les contrôles pendant les tâches asynchrones ou animations.
+     *
+     * @param busy {@code true} pour désactiver temporairement l’UI
+     */
     private void setBusy(final boolean busy) {
         likeBtn.setEnabled(!busy);
         nopeBtn.setEnabled(!busy);
@@ -240,7 +325,12 @@ public final class Tool2Panel extends JPanel {
         backBtn.setEnabled(!busy);
     }
 
-    /** Pas de String.format / formatted : portable et sans warning SpotBugs. */
+    /**
+     * Définit le contenu HTML de la zone de description (sans {@code String.format}),
+     * dans un conteneur centré et stylisé.
+     *
+     * @param htmlInner contenu HTML interne (échappé si nécessaire)
+     */
     private void setDescHtml(final String htmlInner) {
         final String ls = System.lineSeparator();
         final String html =
@@ -259,10 +349,22 @@ public final class Tool2Panel extends JPanel {
         descPane.setCaretPosition(0);
     }
 
+    /**
+     * Remplace les sauts de ligne par des {@code <br/>} pour un affichage HTML centré.
+     *
+     * @param text texte source
+     * @return texte prêt à l’affichage HTML
+     */
     private static String htmlCenterBig(final String text) {
         return text.replace("\n", "<br/>");
     }
 
+    /**
+     * Échappe minimalement le HTML pour les caractères spéciaux usuels.
+     *
+     * @param s texte source (peut être {@code null})
+     * @return texte échappé (jamais {@code null})
+     */
     private static String htmlEscape(final String s) {
         if (s == null) {
             return "";
@@ -270,6 +372,11 @@ public final class Tool2Panel extends JPanel {
         return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
+    /**
+     * Applique un style « néon » à un bouton d’action (couleurs, bordures composées).
+     *
+     * @param b bouton à styliser
+     */
     private void styleNeonButton(final JButton b) {
         b.setFocusPainted(false);
         b.setForeground(Color.WHITE);
@@ -283,12 +390,22 @@ public final class Tool2Panel extends JPanel {
         b.setFont(new Font("Segoe UI", Font.BOLD, 14));
     }
 
+    /**
+     * Variante « primaire » du style néon (taille et police renforcées).
+     *
+     * @param b bouton à styliser
+     */
     private void styleNeonPrimary(final JButton b) {
         styleNeonButton(b);
         b.setFont(new Font("Segoe UI", Font.BOLD, 18));
         b.setPreferredSize(new Dimension(220, 56));
     }
 
+    /**
+     * Style « outlined » pour le bouton retour.
+     *
+     * @param b bouton à styliser
+     */
     private void styleBackOutlined(final JButton b) {
         b.setFocusPainted(false);
         b.setContentAreaFilled(false);
@@ -299,25 +416,46 @@ public final class Tool2Panel extends JPanel {
         b.setFont(new Font("Segoe UI", Font.PLAIN, 14));
     }
 
+    /**
+     * Style des labels d’information (couleur, police, centrage).
+     *
+     * @param l label à styliser
+     */
     private void styleInfoLabel(final JLabel l) {
         l.setForeground(new Color(235, 235, 235));
         l.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         l.setHorizontalAlignment(SwingConstants.CENTER);
     }
 
+    /**
+     * Lance l’animation visuelle de « like » (pop + étincelles),
+     * puis exécute le callback {@code onDone}.
+     *
+     * @param onDone action à exécuter en fin d’animation
+     */
     private void runLikeAnimation(final Runnable onDone) {
         popUI.start(likeLayer, onDone);
     }
 
+    /**
+     * Lance l’animation visuelle de « nope » (shake),
+     * puis exécute le callback {@code onDone}.
+     *
+     * @param onDone action à exécuter en fin d’animation
+     */
     private void runNopeAnimation(final Runnable onDone) {
         shakeUI.start(nopeLayer, onDone);
     }
 
-    /** Animation de “pop” + étincelles. */
+    /**
+     * UI de couche réalisant une animation de « pop » et des étincelles radialement
+     * autour du bouton. Animation pilotée par un {@link javax.swing.Timer}.
+     */
     private static final class PopSparkLayerUI extends LayerUI<JComponent>
             implements ActionListener {
 
-        private static final int SPARK_COUNT = 10; // ← static final (perf)
+        /** Nombre fixe d’étincelles. */
+        private static final int SPARK_COUNT = 10;
 
         private javax.swing.Timer timer;
         private long start;
@@ -330,6 +468,12 @@ public final class Tool2Panel extends JPanel {
         private final double[] speed = new double[SPARK_COUNT];
         private final Random rng = new Random();
 
+        /**
+         * Démarre l’animation « pop + sparks » sur la couche donnée.
+         *
+         * @param lyr  couche JLayer ciblée
+         * @param done callback à exécuter en fin d’animation
+         */
         void start(final JLayer<? extends JComponent> lyr, final Runnable done) {
             this.layer = lyr;
             this.onDone = done;
@@ -374,6 +518,7 @@ public final class Tool2Panel extends JPanel {
             final int cx = w / 2;
             final int cy = h / 2;
 
+            // Effet de « pop » (zoom léger)
             final double t = progress;
             final double s = t < 0.5 ? 1 + 0.1 * (t / 0.5) : 1.1 - 0.1 * ((t - 0.5) / 0.5);
 
@@ -384,6 +529,7 @@ public final class Tool2Panel extends JPanel {
             view.paint(g2);
             g2.setTransform(old);
 
+            // Étincelles
             final float alpha = (float) (1.0 - progress);
             for (int i = 0; i < SPARK_COUNT; i++) {
                 final double ang = angles[i];
@@ -398,7 +544,10 @@ public final class Tool2Panel extends JPanel {
         }
     }
 
-    /** Animation “shake”. */
+    /**
+     * UI de couche réalisant une animation de « shake » horizontale rapide.
+     * Animation pilotée par un {@link javax.swing.Timer}.
+     */
     private static final class ShakeLayerUI extends LayerUI<JComponent>
             implements ActionListener {
 
@@ -409,6 +558,12 @@ public final class Tool2Panel extends JPanel {
         private JLayer<? extends JComponent> layer;
         private Runnable onDone;
 
+        /**
+         * Démarre l’animation de « shake » sur la couche donnée.
+         *
+         * @param lyr  couche JLayer ciblée
+         * @param done callback à exécuter en fin d’animation
+         */
         void start(final JLayer<? extends JComponent> lyr, final Runnable done) {
             this.layer = lyr;
             this.onDone = done;
@@ -448,6 +603,11 @@ public final class Tool2Panel extends JPanel {
         }
     }
 
+    /**
+     * Dessine le fond en dégradé vertical du panneau.
+     *
+     * @param g contexte graphique
+     */
     @Override
     protected void paintComponent(final Graphics g) {
         super.paintComponent(g);
