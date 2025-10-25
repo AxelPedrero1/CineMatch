@@ -30,7 +30,7 @@ public final class Tool4Panel extends JPanel {
     private final JButton sendButton = new JButton("Envoyer");
     private final JButton backButton = new JButton("← Retour");
 
-    private final JLabel thinkingLabel = new JLabel("🤔 L’IA réfléchit...");
+    private final JLabel thinkingLabel = new JLabel("L’IA réfléchit...");
     private final JProgressBar loadingBar = new JProgressBar();
 
     public Tool4Panel(final Function<String, String> askFunction,
