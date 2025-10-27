@@ -25,52 +25,87 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 
 /**
- * Panneau Swing pour recommander un film à partir d'un film aimé et
- * générer une description, avec un style d'interface personnalisé.
+ * Panneau Swing permettant de proposer un film similaire à partir d’un film aimé
+ * et de générer une description courte, le tout avec un style d’interface « néon ».
  *
- * <p>Conforme Checkstyle (imports, indentation, javadoc, lignes courtes)
- * et évite les flags SpotBugs classiques.</p>
+ * <p>Composants principaux :</p>
+ * <ul>
+ *   <li>Champ texte pour le film aimé</li>
+ *   <li>Bouton de proposition</li>
+ *   <li>Labels titre/raison/plateforme</li>
+ *   <li>Zone HTML pour la description</li>
+ *   <li>Boutons « Ajouter à ma liste » et « Régénérer description »</li>
+ * </ul>
+ *
+ * <p>La génération de recommandations et de descriptions est réalisée de manière
+ * asynchrone via {@link SwingWorker} pour ne pas bloquer l’EDT.</p>
+ *
+ * <p>Conforme Checkstyle (imports, indentation, javadoc, lignes courtes) et
+ * évite les flags SpotBugs courants (annulation de workers, NPE, etc.).</p>
  */
 public final class Tool1Panel extends JPanel {
 
+    /** UID de sérialisation standard. */
     private static final long serialVersionUID = 1L;
 
-    /** Couleurs de thème. */
+    // --- Thème ---
+
+    /** Couleur néon rose principale. */
     private static final Color NEON_PINK = new Color(255, 64, 160);
+    /** Variante plus sombre du néon rose. */
     private static final Color NEON_PINK_DARK = new Color(200, 30, 120);
+    /** Couleur de texte au survol. */
     private static final Color HOVER_PINK_TXT = new Color(255, 210, 230);
+    /** Couleur de fond de carte par défaut. */
     private static final Color BASE_CARD_BG = new Color(30, 30, 40);
+    /** Couleur de fond de carte au survol. */
     private static final Color HOVER_CARD_BG = new Color(50, 40, 60);
+    /** Couleur haute du dégradé d’arrière-plan. */
     private static final Color BG_TOP = new Color(18, 18, 24);
+    /** Couleur basse du dégradé d’arrière-plan. */
     private static final Color BG_BOTTOM = new Color(35, 20, 40);
+    /** Couleur de texte secondaire. */
     private static final Color TEXT_DIM = new Color(220, 220, 220);
 
+    // --- Dépendances et état ---
+
+    /** Service de recommandation injecté. */
     private transient MovieRecommenderService service;
-    private transient java.util.function.Consumer<String> navigator;
+    /** Callback de navigation (ex. {@code "home"}). */
+    private transient Consumer<String> navigator;
+    /** Recommandation courante affichée. */
     private transient Recommendation current;
 
+    // --- UI : champs et boutons ---
 
+    /** Champ de saisie du film aimé. */
     private final JTextField input = new JTextField();
+    /** Bouton pour lancer la proposition. */
     private final JButton propose = new JButton("Proposer");
+    /** Label du titre recommandé. */
     private final JLabel title = new JLabel("—", SwingConstants.CENTER);
+    /** Label de la raison de recommandation. */
     private final JLabel reason = new JLabel("—", SwingConstants.CENTER);
+    /** Label de la plateforme de visionnage. */
     private final JLabel platform = new JLabel("—", SwingConstants.CENTER);
+    /** Zone d’affichage HTML pour la description. */
     private final JEditorPane descPane = new JEditorPane("text/html", "");
 
+    /** Worker asynchrone pour la génération de description. */
     private transient SwingWorker<String, Void> descWorker;
+    /** Bouton d’ajout à la liste d’envies. */
     private final JButton addWishlist = new JButton("Ajouter à ma liste");
+    /** Bouton de régénération de la description. */
     private final JButton descBtn = new JButton("Régénérer description");
+    /** Bouton retour. */
     private final JButton backBtn = new JButton("Retour");
 
-
-
-
     /**
-     * Constructeur principal.
+     * Constructeur principal : installe l’UI, les styles et les actions.
      *
-     * @param service   service de recommandation (non null)
-     * @param navigator callback de navigation (ex. "home") (non null)
-     * @throws NullPointerException si un paramètre est null
+     * @param service   service de recommandation (non {@code null})
+     * @param navigator callback de navigation (ex. {@code "home"}) (non {@code null})
+     * @throws NullPointerException si {@code service} ou {@code navigator} est {@code null}
      */
     public Tool1Panel(final MovieRecommenderService service,
                       final Consumer<String> navigator) {
@@ -81,6 +116,7 @@ public final class Tool1Panel extends JPanel {
         setOpaque(false);
         setBorder(new EmptyBorder(16, 20, 20, 20));
 
+        // --- Barre du haut : retour + champ + proposer ---
         final JPanel topBar = new JPanel(new BorderLayout(8, 8));
         topBar.setOpaque(false);
 
@@ -107,6 +143,7 @@ public final class Tool1Panel extends JPanel {
 
         add(topBar, BorderLayout.NORTH);
 
+        // --- Centre : titre + description + infos ---
         title.setFont(title.getFont().deriveFont(Font.BOLD, 24f));
         title.setForeground(Color.WHITE);
 
@@ -134,6 +171,7 @@ public final class Tool1Panel extends JPanel {
 
         add(center, BorderLayout.CENTER);
 
+        // --- Bas : actions ---
         final JPanel bottom = new JPanel();
         bottom.setOpaque(false);
         styleNeonButton(addWishlist);
@@ -142,17 +180,19 @@ public final class Tool1Panel extends JPanel {
         bottom.add(descBtn);
         add(bottom, BorderLayout.SOUTH);
 
+        // --- Actions ---
         propose.addActionListener(e -> onPropose());
         addWishlist.addActionListener(e -> onAdd());
         descBtn.addActionListener(e -> startDescriptionForCurrent());
     }
 
     /**
-     * Constructeur de compatibilité (ancien code/tests) acceptant un MainFrame.
+     * Constructeur de compatibilité acceptant un {@link MainFrame} parent
+     * (utilisé pour la navigation).
      *
-     * @param service service de recommandation (non null)
-     * @param parent  frame parent, utilisé pour la navigation (non null)
-     * @throws NullPointerException si un paramètre est null
+     * @param service service de recommandation (non {@code null})
+     * @param parent  frame parent, utilisé pour la navigation (non {@code null})
+     * @throws NullPointerException si {@code service} ou {@code parent} est {@code null}
      */
     public Tool1Panel(final MovieRecommenderService service,
                       final app.cinematch.ui.swing.MainFrame parent) {
@@ -160,6 +200,10 @@ public final class Tool1Panel extends JPanel {
                 Objects.requireNonNull(parent, "parent must not be null")::showCard);
     }
 
+    /**
+     * Libère proprement les ressources asynchrones lors du retrait du composant.
+     * Annule le worker de description si encore actif.
+     */
     @Override
     public void removeNotify() {
         if (descWorker != null && !descWorker.isDone()) {
@@ -169,8 +213,10 @@ public final class Tool1Panel extends JPanel {
     }
 
     /**
-     * Déclenche une proposition de film à partir du champ "Film aimé".
-     * Gère l'état "busy" et lance une requête asynchrone.
+     * Déclenche une proposition de film à partir du champ « Film aimé ».
+     * Gère l’état « busy », annule les tâches précédentes si nécessaire,
+     * et exécute l’appel à {@link MovieRecommenderService#recommendFromLike(String)}
+     * dans un {@link SwingWorker}.
      */
     private void onPropose() {
         final String liked = input.getText().trim();
@@ -211,8 +257,9 @@ public final class Tool1Panel extends JPanel {
     }
 
     /**
-     * Démarre la génération asynchrone de la description pour la
-     * recommandation courante, si disponible.
+     * Démarre la génération asynchrone de la description pour la recommandation
+     * courante (si présente) via {@link MovieRecommenderService#generateDescription(String)}.
+     * Annule le worker précédent si nécessaire et protège contre les courses d’états.
      */
     private void startDescriptionForCurrent() {
         if (current == null) {
@@ -254,7 +301,9 @@ public final class Tool1Panel extends JPanel {
     }
 
     /**
-     * Ajoute le film courant à la liste d'envies.
+     * Ajoute le film courant à la liste d’envies (statut {@code "envie"})
+     * via {@link MovieRecommenderService#mark(String, String)}, puis affiche
+     * une boîte de dialogue de confirmation.
      */
     private void onAdd() {
         if (current == null) {
@@ -265,9 +314,9 @@ public final class Tool1Panel extends JPanel {
     }
 
     /**
-     * Active/désactive les composants interactifs pendant les tâches asynchrones.
+     * Active ou désactive les composants interactifs pendant les tâches asynchrones.
      *
-     * @param busy true si l'UI doit être désactivée temporairement
+     * @param busy {@code true} pour désactiver temporairement l’UI, {@code false} sinon
      */
     private void setBusy(final boolean busy) {
         propose.setEnabled(!busy);
@@ -278,9 +327,10 @@ public final class Tool1Panel extends JPanel {
     }
 
     /**
-     * Définit le HTML de la zone de description (sans {@code String.format}).
+     * Définit le contenu HTML de la zone de description (sans {@code String.format}).
+     * Ajoute un conteneur centré et stylisé autour du contenu fourni.
      *
-     * @param htmlInner contenu HTML interne (échappé en amont si besoin)
+     * @param htmlInner contenu HTML interne (déjà échappé si nécessaire)
      */
     private void setDescHtml(final String htmlInner) {
         final String ls = System.lineSeparator();
@@ -305,20 +355,22 @@ public final class Tool1Panel extends JPanel {
     }
 
     /**
-     * Centre/agrandit : remplace les sauts de ligne par des {@code <br/>}.
+     * Centre et agrandit visuellement le texte en remplaçant les sauts de ligne
+     * par des balises {@code <br/>} pour l’affichage HTML.
      *
-     * @param text texte initial
-     * @return texte prêt pour l'injection HTML
+     * @param text texte source
+     * @return texte prêt pour l’injection HTML
      */
     private static String htmlCenterBig(final String text) {
         return text.replace("\n", "<br/>");
     }
 
     /**
-     * Échappe minimalement le HTML.
+     * Échappe minimalement le HTML pour éviter une interprétation des caractères
+     * spéciaux les plus courants.
      *
-     * @param s texte source
-     * @return texte échappé
+     * @param s texte source (peut être {@code null})
+     * @return texte échappé (jamais {@code null})
      */
     private static String htmlEscape(final String s) {
         if (s == null) {
@@ -330,7 +382,8 @@ public final class Tool1Panel extends JPanel {
     }
 
     /**
-     * Style néon pour les boutons d'action.
+     * Applique un style « néon » aux boutons d’action (couleurs, bordures composées,
+     * effet de survol).
      *
      * @param b bouton à styliser
      */
@@ -369,7 +422,7 @@ public final class Tool1Panel extends JPanel {
     }
 
     /**
-     * Style "outlined" pour le bouton retour.
+     * Applique un style « outlined » au bouton Retour (texte pâle + contour).
      *
      * @param b bouton à styliser
      */
@@ -399,7 +452,7 @@ public final class Tool1Panel extends JPanel {
     }
 
     /**
-     * Style du champ texte.
+     * Applique le style du champ texte (couleurs, bordure et police).
      *
      * @param tf champ à styliser
      */
@@ -414,7 +467,7 @@ public final class Tool1Panel extends JPanel {
     }
 
     /**
-     * Style des labels d'information.
+     * Applique le style des labels d’information (couleur, police, centrage).
      *
      * @param l label à styliser
      */
@@ -424,6 +477,11 @@ public final class Tool1Panel extends JPanel {
         l.setHorizontalAlignment(SwingConstants.CENTER);
     }
 
+    /**
+     * Dessine le fond en dégradé vertical du panneau.
+     *
+     * @param g contexte graphique Swing
+     */
     @Override
     protected void paintComponent(final Graphics g) {
         super.paintComponent(g);

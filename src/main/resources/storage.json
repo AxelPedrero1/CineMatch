@@ -75,10 +75,6 @@
   "status" : "envie",
   "dateTimeIso" : "2025-10-17T11:07:56.652481200"
 }, {
-  "title" : "Jojo Rabbit",
-  "status" : "envie",
-  "dateTimeIso" : "2025-10-17T11:41:52.122584"
-}, {
   "title" : "Super Mario Bros. : La Malédiction du Royaumeapproprié",
   "status" : "pas_interesse",
   "dateTimeIso" : "2025-10-17T11:43:04.943685300"
@@ -112,6 +108,10 @@
   "dateTimeIso" : "2025-10-22T11:31:31.242521200"
 }, {
   "title" : "L'Invention du désert",
-  "status" : "envie",
-  "dateTimeIso" : "2025-10-22T11:31:33.925308800"
+  "status" : "pas_interesse",
+  "dateTimeIso" : "2025-10-24T09:26:37.216768200"
+}, {
+  "title" : "Jojo Rabbit",
+  "status" : "pas_interesse",
+  "dateTimeIso" : "2025-10-24T10:47:38.180590600"
 } ]

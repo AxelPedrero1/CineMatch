@@ -10,7 +10,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class JsonStorageTest {
+public class JsonStorageTest {
 
     private static final Path STORAGE_PATH =
             Paths.get("src", "main", "resources", "storage.json");
@@ -20,6 +20,7 @@ class JsonStorageTest {
 
     @BeforeEach
     void backup() throws IOException {
+        System.setProperty("cinematch.storage.silent", "true"); // coupe les logs
         Files.createDirectories(STORAGE_PATH.getParent());
         backupExisted = Files.exists(STORAGE_PATH);
         backupBytes = backupExisted ? Files.readAllBytes(STORAGE_PATH) : null;
@@ -28,6 +29,8 @@ class JsonStorageTest {
 
     @AfterEach
     void restore() throws IOException {
+        System.clearProperty("cinematch.storage.silent"); // remet l’état normal
+
         Files.deleteIfExists(STORAGE_PATH);
         if (backupExisted) {
             Files.write(STORAGE_PATH, backupBytes);
@@ -55,13 +58,14 @@ class JsonStorageTest {
         assertTrue(reloaded.stream().anyMatch(e -> e.title().equals("Interstellar") && e.status().equals("envie")));
         assertTrue(reloaded.stream().anyMatch(e -> e.title().equals("Inception") && e.status().equals("deja_vu")));
     }
-    // 1) Couvrir le constructeur implicite (utilitaire) — purement pour la couverture
+
+    // 1) Couvrir le constructeur utilitaire privé — via réflexion (couverture uniquement)
     @Test
-    @DisplayName("Utility constructor: instantiation does nothing (coverage only)")
-    void constructor_for_coverage_only() {
-        // La classe n'est pas censée être instanciée en prod, mais on le fait ici
-        // pour couvrir le constructeur par défaut généré par le compilateur.
-        JsonStorage instance = new JsonStorage();
+    @DisplayName("Utility constructor (private): coverage via reflection")
+    void constructor_for_coverage_only() throws Exception {
+        var ctor = JsonStorage.class.getDeclaredConstructor();
+        ctor.setAccessible(true); // autorise l'appel du constructeur privé
+        Object instance = ctor.newInstance();
         assertNotNull(instance);
     }
 
@@ -69,14 +73,13 @@ class JsonStorageTest {
     @Test
     @DisplayName("saveAll: IOException (path is a directory) is caught → no throw")
     void saveAll_handles_ioexception_when_path_is_directory() throws Exception {
-        // On part de la même sauvegarde/restauration que tes autres tests
         var storagePath = java.nio.file.Paths.get("src", "main", "resources", "storage.json");
 
         // S'assurer que le fichier n'existe pas puis CRÉER UN DOSSIER au même chemin
         java.nio.file.Files.deleteIfExists(storagePath);
         java.nio.file.Files.createDirectory(storagePath); // ← provoque l'IOException sur writeValue(...)
 
-        // Appel : ne doit PAS jeter (catch silencieux dans saveAll)
+        // Appel : ne doit PAS jeter (catch dans saveAll)
         assertDoesNotThrow(() -> JsonStorage.saveAll(java.util.List.of(
                 new app.cinematch.model.HistoryEntry("X", "envie", "2025-10-21T10:00:00Z")
         )));
@@ -86,7 +89,7 @@ class JsonStorageTest {
         assertNotNull(all);
         assertTrue(all.isEmpty());
 
-        // Nettoyage local de ce test (ton @AfterEach restaure l’état initial ensuite)
+        // Nettoyage local de ce test (le @AfterEach restaure ensuite)
         java.nio.file.Files.deleteIfExists(storagePath);
     }
 
@@ -101,12 +104,11 @@ class JsonStorageTest {
         assertEquals(1, all.stream().filter(e -> e.title().equalsIgnoreCase("Matrix")).count());
 
         var e = all.get(0);
-        assertTrue(e.title().equalsIgnoreCase("Matrix")); // au lieu d'assertEquals("Matrix", ...)
+        assertTrue(e.title().equalsIgnoreCase("Matrix"));
         assertEquals("deja_vu", e.status());
         assertNotNull(e.dateTimeIso());
         assertFalse(e.dateTimeIso().isBlank());
     }
-
 
     @Test
     @DisplayName("getByStatus filtre par statut (case-insensitive) et trie par date desc")

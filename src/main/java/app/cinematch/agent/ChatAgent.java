@@ -4,17 +4,51 @@ import app.cinematch.api.OllamaClient;
 import java.util.List;
 
 /**
- * Agent conversationnel connecté à Ollama avec mémoire et profil personnalisable.
+ * Représente un agent conversationnel connecté à un modèle de langage Ollama,
+ * capable de générer des recommandations de films personnalisées en fonction
+ * des préférences de l’utilisateur.
+ *
+ * <p>L’agent maintient un profil utilisateur et une mémoire interne (stateless)
+ * permettant de conserver la trace des films vus, à voir ou non appréciés.
+ * Il formate dynamiquement le prompt système envoyé au modèle Ollama pour
+ * obtenir des réponses cohérentes et pertinentes.</p>
+ *
+ * <p>Exemple d’utilisation :
+ * <pre>{@code
+ * OllamaClient ollama = new OllamaClient("http://localhost:11434", "mistral");
+ * Profile profil = new Profile("Simon");
+ * ChatAgent agent = new ChatAgent(ollama, profil, null);
+ * String reponse = agent.ask("Peux-tu me recommander un film français récent ?");
+ * }</pre>
+ *
+ * @see app.cinematch.api.OllamaClient
+ * @see app.cinematch.agent.Memory
+ * @see app.cinematch.agent.Profile
  */
 public final class ChatAgent {
 
+    /** Client Ollama utilisé pour communiquer avec le modèle de langage. */
     private final OllamaClient ollama;
+
+    /** Profil utilisateur contenant les préférences générales. */
     private Profile profile;
-    // Memory est sans état -> on évite EI_EXPOSE_REP2 en ne stockant pas l'instance externe
+
+    /**
+     * Mémoire interne stateless.
+     * Une nouvelle instance est créée localement pour éviter toute fuite de représentation
+     * (évite l’avertissement SpotBugs EI_EXPOSE_REP2).
+     */
     private final Memory memory;
     private final ConversationMemory convMemory; // 🧠 mémoire du chat
 
 
+    /**
+     * Construit un nouvel agent conversationnel basé sur Ollama, avec un profil et une mémoire interne.
+     *
+     * @param ollama  le client Ollama à utiliser pour les échanges
+     * @param profile le profil utilisateur associé à cet agent
+     * @param ignored paramètre mémoire ignoré pour éviter l’exposition d’une instance externe
+     */
     public ChatAgent(final OllamaClient ollama, final Profile profile, final Memory ignored) {
         this.ollama = ollama;
         this.profile = profile;
@@ -23,12 +57,24 @@ public final class ChatAgent {
         this.convMemory = new ConversationMemory(6); // garde les 6 derniers messages
     }
 
+    /**
+     * Met à jour le profil utilisateur associé à l’agent.
+     *
+     * @param profile le nouveau profil utilisateur à appliquer
+     */
     public void setProfile(final Profile profile) {
         this.profile = profile;
     }
 
     /**
-     * Envoie un message utilisateur à l'agent et récupère la réponse de l'IA.
+     * Envoie un message de l’utilisateur à l’agent et retourne la réponse générée par Ollama.
+     *
+     * <p>La méthode récupère les listes internes de films vus, souhaités et non appréciés
+     * depuis {@link Memory}, et les insère dans le prompt système envoyé au modèle.
+     * Le modèle adapte alors ses recommandations en conséquence.</p>
+     *
+     * @param userPrompt le message de l’utilisateur (question, demande de recommandation, etc.)
+     * @return la réponse générée par le modèle de langage
      */
     public String ask(final String userPrompt) {
         // 1) Ajout du message utilisateur à la mémoire
@@ -73,12 +119,20 @@ public final class ChatAgent {
         return response;    }
 
     /**
-     * Getter sans fuite de représentation interne : on renvoie une nouvelle instance.
+     * Retourne une nouvelle instance de {@link Memory}, garantissant l’absence
+     * de fuite de représentation interne.
+     *
+     * @return une nouvelle instance de {@link Memory}
      */
     public Memory getMemory() {
         return new Memory();
     }
 
+    /**
+     * Retourne le profil utilisateur actuellement associé à l’agent.
+     *
+     * @return le profil de l’utilisateur
+     */
     public Profile getProfile() {
         return profile;
     }
