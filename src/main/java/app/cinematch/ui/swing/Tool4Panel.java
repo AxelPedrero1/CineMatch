@@ -1,28 +1,14 @@
 package app.cinematch.ui.swing;
 
 import app.cinematch.agent.ChatAgent;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.GradientPaint;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Font;
+import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.SwingConstants;
-import javax.swing.SwingWorker;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.border.CompoundBorder;
-import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
+import javax.swing.*;
+import javax.swing.border.*;
 
 /**
  * Panneau de discussion directe avec l’IA ({@link ChatAgent}) via une interface simple.
@@ -92,9 +78,8 @@ public final class Tool4Panel extends JPanel {
      */
     public Tool4Panel(final Function<String, String> askFunction,
                       final Consumer<String> navigationCallback) {
-        super();
-        this.askFn = Objects.requireNonNull(askFunction, "askFunction must not be null");
-        this.navigator = Objects.requireNonNull(navigationCallback, "navigationCallback must not be null");
+        this.askFn = Objects.requireNonNull(askFunction);
+        this.navigator = Objects.requireNonNull(navigationCallback);
         buildUi();
     }
 
@@ -107,8 +92,8 @@ public final class Tool4Panel extends JPanel {
      * @throws NullPointerException si un des paramètres est {@code null}
      */
     public Tool4Panel(final ChatAgent agent, final Consumer<String> navigationCallback) {
-        this(Objects.requireNonNull(agent, "agent must not be null")::ask,
-                Objects.requireNonNull(navigationCallback, "navigationCallback must not be null"));
+        this(Objects.requireNonNull(agent)::ask,
+                Objects.requireNonNull(navigationCallback));
     }
 
     /**
@@ -117,17 +102,17 @@ public final class Tool4Panel extends JPanel {
      */
     private void buildUi() {
         setLayout(new BorderLayout(10, 10));
+        setBorder(new EmptyBorder(20, 20, 20, 20));
         setOpaque(false);
-        setBorder(new EmptyBorder(16, 20, 20, 20));
 
-        // Barre supérieure
-        final JPanel topBar = new JPanel(new BorderLayout());
-        topBar.setOpaque(false);
-        styleBackOutlined(backButton);
+        // --- Haut : titre et bouton retour ---
+        final JPanel header = new JPanel(new BorderLayout());
+        header.setOpaque(false);
+
+        styleBackButton(backButton);
         backButton.addActionListener(e -> navigator.accept("home"));
 
-        final javax.swing.JLabel title =
-                new javax.swing.JLabel("Discussion IA", SwingConstants.CENTER);
+        final JLabel title = new JLabel("💬 Discussion avec l’IA", SwingConstants.CENTER);
         title.setForeground(Color.WHITE);
         title.setFont(new Font("Segoe UI", Font.BOLD, 20));
 
@@ -155,9 +140,32 @@ public final class Tool4Panel extends JPanel {
         inputPanel.setOpaque(false);
         styleTextField(inputField);
         styleNeonButton(sendButton);
+
+        final JPanel inputPanel = new JPanel(new BorderLayout(6, 6));
+        inputPanel.setOpaque(false);
         inputPanel.add(inputField, BorderLayout.CENTER);
         inputPanel.add(sendButton, BorderLayout.EAST);
-        add(inputPanel, BorderLayout.SOUTH);
+
+        // Chargement
+        thinkingLabel.setForeground(new Color(220, 220, 220));
+        thinkingLabel.setFont(new Font("Segoe UI", Font.ITALIC, 13));
+        thinkingLabel.setVisible(false);
+
+        loadingBar.setIndeterminate(true);
+        loadingBar.setForeground(PINK_ACCENT);
+        loadingBar.setBackground(new Color(40, 40, 50));
+        loadingBar.setBorder(BorderFactory.createLineBorder(new Color(100, 100, 120), 1, true));
+        loadingBar.setPreferredSize(new Dimension(200, 6));
+        loadingBar.setVisible(false);
+
+        final JPanel loadingPanel = new JPanel(new BorderLayout());
+        loadingPanel.setOpaque(false);
+        loadingPanel.add(thinkingLabel, BorderLayout.NORTH);
+        loadingPanel.add(loadingBar, BorderLayout.SOUTH);
+
+        bottom.add(inputPanel, BorderLayout.CENTER);
+        bottom.add(loadingPanel, BorderLayout.SOUTH);
+        add(bottom, BorderLayout.SOUTH);
 
         // Actions
         sendButton.addActionListener(e -> sendMessage());
@@ -169,31 +177,32 @@ public final class Tool4Panel extends JPanel {
      * Protège l’UI en désactivant temporairement le bouton d’envoi.
      */
     private void sendMessage() {
-        final String userText = inputField.getText().trim();
-        if (userText.isEmpty()) {
-            return;
-        }
+        final String text = inputField.getText().trim();
+        if (text.isEmpty()) return;
 
-        appendMessage("Vous : " + userText + System.lineSeparator());
+        appendMessage("Vous", text, true);
         inputField.setText("");
         sendButton.setEnabled(false);
+
+        thinkingLabel.setVisible(true);
+        loadingBar.setVisible(true);
 
         new SwingWorker<String, Void>() {
             @Override
             protected String doInBackground() {
-                return askFn.apply(userText);
+                return askFn.apply(text);
             }
 
             @Override
             protected void done() {
                 try {
-                    final String response = get();
-                    appendMessage("IA : " + response + System.lineSeparator() + System.lineSeparator());
-                } catch (final Exception ex) {
-                    appendMessage("Erreur : " + ex.getMessage()
-                            + System.lineSeparator() + System.lineSeparator());
+                    appendMessage("IA", get(), false);
+                } catch (Exception ex) {
+                    appendMessage("Erreur", ex.getMessage(), false);
                 } finally {
                     sendButton.setEnabled(true);
+                    thinkingLabel.setVisible(false);
+                    loadingBar.setVisible(false);
                 }
             }
         }.execute();
@@ -224,28 +233,19 @@ public final class Tool4Panel extends JPanel {
                 new LineBorder(NEON_PINK_DARK, 2, true),
                 new CompoundBorder(new LineBorder(NEON_PINK, 1, true), pad)
         ));
-        button.addMouseListener(new MouseAdapter() {
+        btn.addMouseListener(new MouseAdapter() {
             @Override
-            public void mouseEntered(final MouseEvent e) {
-                button.setBackground(HOVER_CARD_BG);
-                button.setForeground(HOVER_PINK_TXT);
-                button.setBorder(new CompoundBorder(
-                        new LineBorder(NEON_PINK, 2, true),
-                        new CompoundBorder(new LineBorder(Color.WHITE, 1, true), pad)
-                ));
+            public void mouseEntered(MouseEvent e) {
+                btn.setBackground(PINK_ACCENT);
+                btn.setForeground(Color.WHITE);
             }
 
             @Override
-            public void mouseExited(final MouseEvent e) {
-                button.setBackground(BASE_CARD_BG);
-                button.setForeground(Color.WHITE);
-                button.setBorder(new CompoundBorder(
-                        new LineBorder(NEON_PINK_DARK, 2, true),
-                        new CompoundBorder(new LineBorder(NEON_PINK, 1, true), pad)
-                ));
+            public void mouseExited(MouseEvent e) {
+                btn.setBackground(new Color(50, 40, 60));
+                btn.setForeground(Color.WHITE);
             }
         });
-        button.setFont(new Font("Segoe UI", Font.BOLD, 14));
     }
 
     /**
@@ -263,15 +263,13 @@ public final class Tool4Panel extends JPanel {
         button.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         button.addMouseListener(new MouseAdapter() {
             @Override
-            public void mouseEntered(final MouseEvent e) {
-                button.setForeground(Color.WHITE);
-                button.setBorder(new CompoundBorder(new LineBorder(Color.WHITE, 2, true), pad));
+            public void mouseEntered(MouseEvent e) {
+                btn.setForeground(Color.WHITE);
             }
 
             @Override
-            public void mouseExited(final MouseEvent e) {
-                button.setForeground(TEXT_DIM);
-                button.setBorder(new CompoundBorder(new LineBorder(Color.WHITE, 1, true), pad));
+            public void mouseExited(MouseEvent e) {
+                btn.setForeground(Color.LIGHT_GRAY);
             }
         });
     }
@@ -298,13 +296,11 @@ public final class Tool4Panel extends JPanel {
      * @param g contexte graphique
      */
     @Override
-    protected void paintComponent(final Graphics g) {
+    protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        final Graphics2D g2 = (Graphics2D) g.create();
-        final int w = getWidth();
-        final int h = getHeight();
-        g2.setPaint(new GradientPaint(0, 0, BG_TOP, 0, h, BG_BOTTOM));
-        g2.fillRect(0, 0, w, h);
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setPaint(new GradientPaint(0, 0, BG_TOP, 0, getHeight(), BG_BOTTOM));
+        g2.fillRect(0, 0, getWidth(), getHeight());
         g2.dispose();
     }
 
