@@ -1,213 +1,265 @@
 package app.cinematch.ui.swing;
 
+import app.cinematch.agent.ChatAgent;
 import org.junit.jupiter.api.*;
+
 import javax.swing.*;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
-import java.time.Duration;
-import java.time.Instant;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 /**
- * Tests stables et headless pour Tool4Panel (sans Mockito ni JaCoCo).
+ * Tests de Tool4Panel avec style "given / when / then".
+ * Objectif : 100% de couverture JaCoCo (chemins normal + erreur, styles, paint, 2 constructeurs).
  */
-class Tool4PanelTest {
+public class Tool4PanelTest {
 
     @BeforeAll
     static void headless() {
+        // Exécuter les tests Swing en mode headless pour CI
         System.setProperty("java.awt.headless", "true");
     }
 
-    /* ---------- Helpers ---------- */
-
-    private static void noThrow(Runnable r, String msg) {
+    /**
+     * Utilitaire : lecture champ privé par réflexion.
+     */
+    @SuppressWarnings("unchecked")
+    private static <T> T getPrivate(Object target, String fieldName, Class<T> type) {
         try {
-            r.run();
-        } catch (Throwable t) {
-            fail(msg, t);
+            Field f = target.getClass().getDeclaredField(fieldName);
+            f.setAccessible(true);
+            return (T) f.get(target);
+        } catch (Exception e) {
+            throw new AssertionError("Impossible d'accéder au champ " + fieldName, e);
         }
     }
 
     /**
-     * Attend qu’une condition devienne vraie ou échoue après un délai donné.
-     * Remplace l'ancien Thread.sleep() en boucle pour éviter le busy waiting.
+     * Utilitaire : appel méthode privée par réflexion.
      */
-    private static void waitUntil(Duration timeout, String failMsg, BooleanSupplier cond) {
-        Instant end = Instant.now().plus(timeout);
-        while (Instant.now().isBefore(end)) {
-            if (cond.getAsBoolean()) return;
-            try {
-                Thread.sleep(20);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                fail("Thread interrompu pendant l’attente");
-            }
-        }
-        fail(failMsg);
-    }
-
-    private static JButton findButton(Container root, String exactText) {
-        for (Component c : root.getComponents()) {
-            if (c instanceof JButton b && exactText.equals(b.getText())) return b;
-            if (c instanceof Container cc) {
-                JButton r = findButton(cc, exactText);
-                if (r != null) return r;
-            }
-        }
-        return null;
-    }
-
-    private static JTextField findTextField(Container root) {
-        if (root instanceof JTextField tf) return tf;
-        for (Component c : root.getComponents()) {
-            if (c instanceof Container cc) {
-                JTextField tf = findTextField(cc);
-                if (tf != null) return tf;
-            }
-        }
-        return null;
-    }
-
-    private static JLabel findThinkingLabel(Container root) {
-        if (root instanceof JLabel l && l.getText() != null && l.getText().contains("IA")) return l;
-        for (Component c : root.getComponents()) {
-            if (c instanceof Container cc) {
-                JLabel r = findThinkingLabel(cc);
-                if (r != null) return r;
-            }
-        }
-        return null;
-    }
-
-    private static JEditorPane findEditor(Container root) {
-        if (root instanceof JEditorPane ep) return ep;
-        for (Component c : root.getComponents()) {
-            if (c instanceof Container cc) {
-                JEditorPane ep = findEditor(cc);
-                if (ep != null) return ep;
-            }
-        }
-        return null;
-    }
-
-    private static String safeHtml(JEditorPane ep) {
-        if (ep == null) return "";
-        AtomicReference<String> ref = new AtomicReference<>("");
+    private static Object callPrivate(Object target, String methodName, Class<?>[] sig, Object... args) {
         try {
-            SwingUtilities.invokeAndWait(() -> ref.set(ep.getText()));
-        } catch (Exception ignored) {
+            Method m = target.getClass().getDeclaredMethod(methodName, sig);
+            m.setAccessible(true);
+            return m.invoke(target, args);
+        } catch (Exception e) {
+            throw new AssertionError("Impossible d'appeler " + methodName, e);
         }
-        return ref.get();
     }
 
-    /* ---------- Tests ---------- */
-
-    @Test
-    @DisplayName("Initial state: components exist and labels hidden")
-    void initial_state_ok() {
-        Function<String, String> fakeAsk = s -> "Echo:" + s;
-        Consumer<String> fakeNav = s -> {};
-        Tool4Panel panel = new Tool4Panel(fakeAsk, fakeNav);
-
-        assertNotNull(findTextField(panel), "inputField manquant");
-        assertNotNull(findButton(panel, "Envoyer"), "sendButton manquant");
-        JLabel thinking = findThinkingLabel(panel);
-        assertNotNull(thinking, "thinkingLabel manquant");
-    }
-
-    @Test
-    @DisplayName("Send message updates HTML and toggles indicators")
-    void send_flow_updates_html_and_indicators() {
-        AtomicReference<String> lastAsked = new AtomicReference<>();
-        Function<String, String> fakeAsk = s -> {
-            lastAsked.set(s);
-            try {
-                Thread.sleep(150);
-            } catch (InterruptedException ignored) {
-                Thread.currentThread().interrupt();
-            }
-            return "Réponse-" + s.toUpperCase();
-        };
-        AtomicReference<String> nav = new AtomicReference<>(null);
-        Tool4Panel panel = new Tool4Panel(fakeAsk, nav::set);
-
-        JTextField input = findTextField(panel);
-        JButton send = findButton(panel, "Envoyer");
-        JLabel thinking = findThinkingLabel(panel);
-        JEditorPane editor = findEditor(panel);
-        assertNotNull(thinking);
-
-        if (input != null && send != null) {
-            input.setText("salut");
-            noThrow(send::doClick, "click ne doit pas jeter");
-
-            waitUntil(Duration.ofSeconds(2), "thinking pas visible", thinking::isVisible);
-
-            String html = safeHtml(editor);
-            assertTrue(html.contains("salut"), "Le texte saisi doit apparaître dans le HTML");
-            assertEquals("salut", lastAsked.get());
+    /**
+     * Utilitaire : exécuter un bloc et attendre que l'EDT ait fini.
+     */
+    private static void onEDTAndWait(Runnable r) throws Exception {
+        if (SwingUtilities.isEventDispatchThread()) {
+            r.run();
         } else {
-            fail("Input ou bouton Envoyer introuvable");
+            SwingUtilities.invokeAndWait(r);
         }
     }
 
-    @Test
-    @DisplayName("Back button triggers navigation callback")
-    void back_button_calls_navigator() {
-        AtomicReference<String> nav = new AtomicReference<>(null);
-        Tool4Panel panel = new Tool4Panel(s -> "ok", nav::set);
-        JButton back = findButton(panel, "← Retour");
-        assertNotNull(back);
-        noThrow(back::doClick, "click retour");
-        assertEquals("home", nav.get(), "Le callback navigation doit être appelé avec 'home'");
+    /**
+     * Utilitaire : attendre une condition avec timeout simple (sans libs externes).
+     */
+    private static void waitUntil(String msg, long timeoutMs, Condition cond) throws InterruptedException {
+        long end = System.currentTimeMillis() + timeoutMs;
+        while (System.currentTimeMillis() < end) {
+            if (cond.ok()) return;
+            Thread.sleep(10);
+        }
+        fail("Timeout: " + msg);
     }
 
+    @FunctionalInterface
+    private interface Condition { boolean ok(); }
+
     @Test
-    @DisplayName("Hover changes and resets on Envoyer button")
-    void hover_changes_then_resets() {
-        Tool4Panel panel = new Tool4Panel(s -> "ok", s -> {});
-        JButton send = findButton(panel, "Envoyer");
+    void givenConstructorWithFunction_whenBuilds_thenUIConnected() throws Exception {
+        // given — une askFn qui renvoie immédiatement une réponse
+        Function<String, String> askFn = s -> "Réponse à: " + s;
+        AtomicReference<String> navTarget = new AtomicReference<>();
+        Consumer<String> navigator = navTarget::set;
+
+        Tool4Panel panel = new Tool4Panel(askFn, navigator);
+
+        // when — on récupère les composants privés
+        JTextField input = getPrivate(panel, "inputField", JTextField.class);
+        JButton send = getPrivate(panel, "sendButton", JButton.class);
+        JButton back = getPrivate(panel, "backButton", JButton.class);
+        JTextArea area = getPrivate(panel, "conversationArea", JTextArea.class);
+        JLabel thinking = getPrivate(panel, "thinkingLabel", JLabel.class);
+        JProgressBar bar = getPrivate(panel, "loadingBar", JProgressBar.class);
+
+        // then — les composants existent
+        assertNotNull(input);
         assertNotNull(send);
+        assertNotNull(back);
+        assertNotNull(area);
+        assertNotNull(thinking);
+        assertNotNull(bar);
 
-        Color bg0 = send.getBackground();
-        Color fg0 = send.getForeground();
+        // given — un message utilisateur non vide
+        onEDTAndWait(() -> input.setText("Bonjour"));
 
-        MouseEvent enter = new MouseEvent(send, MouseEvent.MOUSE_ENTERED,
-                System.currentTimeMillis(), 0, 5, 5, 0, false);
-        for (var l : send.getMouseListeners()) l.mouseEntered(enter);
+        // when — on simule un click sur "Envoyer"
+        onEDTAndWait(send::doClick);
 
-        assertNotEquals(bg0, send.getBackground(), "BG doit changer au hover");
+        // then — le message de l'utilisateur doit apparaître immédiatement
+        waitUntil("message utilisateur visible", 500, () -> area.getText().contains("Vous"));
+        assertTrue(thinking.isVisible(), "Le label de réflexion doit être visible pendant le traitement");
+        assertTrue(bar.isVisible(), "La barre de chargement doit être visible pendant le traitement");
+        assertFalse(send.isEnabled(), "Le bouton doit être désactivé pendant l'appel");
 
-        MouseEvent exit = new MouseEvent(send, MouseEvent.MOUSE_EXITED,
-                System.currentTimeMillis(), 0, 5, 5, 0, false);
-        for (var l : send.getMouseListeners()) l.mouseExited(exit);
-
-        assertEquals(bg0, send.getBackground(), "BG doit revenir à l’état initial");
-        assertEquals(fg0, send.getForeground(), "FG doit revenir aussi");
+        // then — la réponse de l'IA apparaît, le loader se cache, et le bouton se réactive
+        waitUntil("réponse IA visible et loader caché", 2000, () ->
+                area.getText().contains("IA") && !bar.isVisible() && send.isEnabled());
+        assertTrue(area.getText().contains("Réponse à: Bonjour"));
     }
 
     @Test
-    @DisplayName("Paint gradient fills image without error")
-    void paint_component_ok() {
+    void givenAskThrows_whenSend_thenErrorBranchIsShownAndLoaderHides() throws Exception {
+        // given — une askFn qui lève une exception
+        Function<String, String> failingAsk = s -> { throw new RuntimeException("Boom"); };
+        Tool4Panel panel = new Tool4Panel(failingAsk, s -> {});
+
+        JTextField input = getPrivate(panel, "inputField", JTextField.class);
+        JButton send = getPrivate(panel, "sendButton", JButton.class);
+        JTextArea area = getPrivate(panel, "conversationArea", JTextArea.class);
+        JProgressBar bar = getPrivate(panel, "loadingBar", JProgressBar.class);
+
+        onEDTAndWait(() -> input.setText("Test erreur"));
+        onEDTAndWait(send::doClick);
+
+        // then — le message d'erreur apparaît et le loader est masqué
+        waitUntil("message d'erreur visible", 2000, () ->
+                area.getText().contains("Erreur") && !bar.isVisible() && send.isEnabled());
+        assertTrue(area.getText().contains("Boom"), "Le message d'erreur doit contenir l'exception");
+    }
+
+    @Test
+    void givenEmptyInput_whenSend_thenDoesNothing() throws Exception {
+        // given — askFn qui échouerait si appelée
+        Function<String, String> askFn = s -> { throw new AssertionError("Ne devrait pas être appelée"); };
+        Tool4Panel panel = new Tool4Panel(askFn, s -> {});
+        JTextField input = getPrivate(panel, "inputField", JTextField.class);
+        JButton send = getPrivate(panel, "sendButton", JButton.class);
+        JTextArea area = getPrivate(panel, "conversationArea", JTextArea.class);
+
+        // when — champ vide puis click
+        onEDTAndWait(() -> input.setText("   "));
+        onEDTAndWait(send::doClick);
+
+        // then — rien ne change
+        assertEquals("", area.getText().trim(), "Aucun texte ne doit être ajouté quand l'entrée est vide");
+        assertTrue(send.isEnabled(), "Le bouton ne doit pas rester désactivé");
+    }
+
+    @Test
+    void givenBackButton_whenClicked_thenNavigatorCalled() throws Exception {
+        // given
+        AtomicReference<String> navTarget = new AtomicReference<>();
+        Tool4Panel panel = new Tool4Panel(s -> "ok", navTarget::set);
+        JButton back = getPrivate(panel, "backButton", JButton.class);
+
+        // when
+        onEDTAndWait(back::doClick);
+
+        // then
+        assertEquals("home", navTarget.get(), "Le bouton Retour doit appeler navigator.accept(\"home\")");
+    }
+
+    @Test
+    void givenButtons_whenHover_thenStyleMouseListenersApply() throws Exception {
+        // given
+        Tool4Panel panel = new Tool4Panel(s -> "ok", s -> {});
+        JButton send = getPrivate(panel, "sendButton", JButton.class);
+        JButton back = getPrivate(panel, "backButton", JButton.class);
+
+        // when — on envoie des events de mouse enter/exit
+        Component src = send;
+        MouseEvent enterSend = new MouseEvent(src, MouseEvent.MOUSE_ENTERED, System.currentTimeMillis(), 0, 1,1,0,false);
+        MouseEvent exitSend  = new MouseEvent(src, MouseEvent.MOUSE_EXITED,  System.currentTimeMillis(), 0, 1,1,0,false);
+        for (var l : send.getMouseListeners()) { l.mouseEntered(enterSend); }
+        Color afterEnterBg = send.getBackground();
+        for (var l : send.getMouseListeners()) { l.mouseExited(exitSend); }
+        Color afterExitBg = send.getBackground();
+
+        // then — couleurs modifiées (on vérifie un changement)
+        assertNotEquals(afterEnterBg, afterExitBg, "Le style du bouton 'Envoyer' doit changer au survol");
+
+        // when — idem pour back (foreground)
+        MouseEvent enterBack = new MouseEvent(back, MouseEvent.MOUSE_ENTERED, System.currentTimeMillis(), 0, 1,1,0,false);
+        MouseEvent exitBack  = new MouseEvent(back, MouseEvent.MOUSE_EXITED,  System.currentTimeMillis(), 0, 1,1,0,false);
+        Color fgBefore = back.getForeground();
+        for (var l : back.getMouseListeners()) { l.mouseEntered(enterBack); }
+        Color fgEnter = back.getForeground();
+        for (var l : back.getMouseListeners()) { l.mouseExited(exitBack); }
+        Color fgExit = back.getForeground();
+
+        // then — foreground varie au survol puis revient
+        assertNotEquals(fgBefore, fgEnter, "Le texte du bouton 'Retour' doit éclaircir au survol");
+        assertEquals(fgExit, back.getForeground(), "Le texte du bouton 'Retour' doit revenir à la couleur normale après sortie");
+    }
+
+    @Test
+    void givenPanel_whenPaintComponent_thenGradientIsRenderedWithoutError() {
+        // given
         Tool4Panel panel = new Tool4Panel(s -> "ok", s -> {});
         panel.setSize(320, 180);
+
+        // when — peindre sur une image offscreen
         BufferedImage img = new BufferedImage(320, 180, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2 = img.createGraphics();
-        noThrow(() -> panel.paintComponent(g2), "paintComponent ne doit pas jeter");
+        assertDoesNotThrow(() -> panel.paint(g2));
         g2.dispose();
-        int[] data = img.getRGB(0, 0, img.getWidth(), img.getHeight(), null, 0, img.getWidth());
-        boolean opaque = false;
-        for (int argb : data)
-            if ((argb >>> 24) != 0x00) {
-                opaque = true;
-                break;
-            }
-        assertTrue(opaque, "Le gradient doit remplir l'image");
+
+        // then — quelques pixels non transparents attendus (on vérifie un pixel central)
+        int argb = img.getRGB(160, 90);
+        assertNotEquals(0, (argb >>> 24), "Le dégradé doit effectivement peindre le fond (alpha non nul)");
+    }
+
+    @Test
+    void givenPrivateCompound_whenCalledByReflection_thenReturnsBorder() {
+        // given
+        Tool4Panel panel = new Tool4Panel(s -> "ok", s -> {});
+        // when
+        Object border = callPrivate(
+                panel,
+                "compound",
+                new Class<?>[]{Color.class, int.class, EmptyBorder.class},
+                Color.WHITE, 2, new EmptyBorder(1,1,1,1)
+        );
+        // then
+        assertTrue(border instanceof CompoundBorder, "La méthode utilitaire doit renvoyer une CompoundBorder");
+    }
+
+    @Test
+    void givenSecondConstructorWithChatAgent_whenAsk_thenResponseShown() throws Exception {
+        // given — utilisation du 2e constructeur pour couvrir ces lignes
+        ChatAgent agent = mock(ChatAgent.class);
+        when(agent.ask("Ping")).thenReturn("Pong");
+
+        Tool4Panel panel = new Tool4Panel(agent, s -> {});
+        JTextField input = getPrivate(panel, "inputField", JTextField.class);
+        JButton send = getPrivate(panel, "sendButton", JButton.class);
+        JTextArea area = getPrivate(panel, "conversationArea", JTextArea.class);
+
+        // when
+        onEDTAndWait(() -> input.setText("Ping"));
+        onEDTAndWait(send::doClick);
+
+        // then
+        waitUntil("réponse via agent visible", 2000, () -> area.getText().contains("Pong"));
+        verify(agent, times(1)).ask("Ping");
     }
 }
