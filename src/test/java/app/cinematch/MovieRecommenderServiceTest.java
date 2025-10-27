@@ -1,9 +1,5 @@
 package app.cinematch;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import app.cinematch.api.OllamaClient;
 import app.cinematch.model.Recommendation;
 import app.cinematch.util.JsonStorageMock;
@@ -14,6 +10,8 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests unitaires de MovieRecommenderService.
@@ -237,5 +235,56 @@ public class MovieRecommenderServiceTest {
 
         // THEN : la méthode retourne une chaîne vide (aucune ligne exploitable).
         assertEquals("", result);
+    }
+
+
+    @Test
+    void givenBaseUrlAndModel_whenConstruct_thenServiceInstantiated() {
+        // GIVEN : un modèle et une URL bidons
+        String baseUrl = "http://fake";
+        String model = "fake-model";
+
+        // WHEN : on crée le service avec le constructeur standard (prod)
+        MovieRecommenderService service = new MovieRecommenderService(baseUrl, model);
+
+        // THEN : l’instance est correctement créée
+            assertNotNull(service);
+    }
+
+    @Test
+    void givenBaseUrlModelAndCustomSink_whenConstruct_thenMarkUsesInjectedSink() {
+        // GIVEN : un BiConsumer capturant les valeurs passées à mark()
+        final String[] holder = new String[2];
+        java.util.function.BiConsumer<String, String> sink = (title, status) -> {
+            holder[0] = title;
+            holder[1] = status;
+        };
+
+        // WHEN : on crée le service avec ce sink personnalisé et on appelle mark()
+        MovieRecommenderService service =
+                new MovieRecommenderService("http://fake", "fake-model", sink);
+        service.mark("Matrix", "seen");
+
+        // THEN : le sink a bien été invoqué avec les bons paramètres
+        assertEquals("Matrix", holder[0]);
+        assertEquals("seen", holder[1]);
+    }
+
+    @Test
+    void givenOllamaAndNullSink_whenConstruct_thenDefaultSinkBranchIsCovered() {
+        // GIVEN : un faux OllamaClient dont la méthode chat() renvoie toujours une chaîne
+        OllamaClient fakeClient = new OllamaClient("http://fake", "fake-model") {
+            @Override
+            public String chat(String system, String user) {
+                return "Une réponse simulée";
+            }
+        };
+
+        // WHEN : on crée le service avec un sink null (branche du constructeur ternaire)
+        MovieRecommenderService service = new MovieRecommenderService(fakeClient, null);
+
+        // THEN : la méthode generateDescription() fonctionne avec le client fake
+        String desc = service.generateDescription("Avatar");
+        assertEquals("Une réponse simulée", desc);
     }
 }
