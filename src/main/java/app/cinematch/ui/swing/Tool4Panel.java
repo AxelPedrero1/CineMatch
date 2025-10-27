@@ -1,14 +1,28 @@
 package app.cinematch.ui.swing;
 
 import app.cinematch.agent.ChatAgent;
-import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.GradientPaint;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import javax.swing.*;
-import javax.swing.border.*;
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JProgressBar;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.SwingConstants;
+import javax.swing.SwingWorker;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 
 /**
  * Panneau de discussion directe avec l’IA ({@link ChatAgent}) via une interface simple.
@@ -16,16 +30,6 @@ import javax.swing.border.*;
  * <p>Le composant affiche une zone de conversation, un champ de saisie et un bouton
  * d’envoi. Les appels au modèle sont réalisés de manière asynchrone avec {@link SwingWorker}
  * afin de ne pas bloquer l’EDT.</p>
- *
- * <p>Conception : le panneau ne conserve pas d’instance mutable externe du domaine ;
- * il stocke uniquement une « capacité » fonctionnelle via {@link #askFn} et un
- * callback de navigation via {@link #navigator}.</p>
- *
- * <p>Exemple d’intégration :
- * <pre>{@code
- * Tool4Panel chat = new Tool4Panel(agent::ask, frame::showCard);
- * frame.setContentPane(chat);
- * }</pre>
  */
 public final class Tool4Panel extends JPanel {
 
@@ -35,12 +39,8 @@ public final class Tool4Panel extends JPanel {
     private static final Color NEON_PINK = new Color(255, 64, 160);
     /** Variante sombre du néon rose. */
     private static final Color NEON_PINK_DARK = new Color(200, 30, 120);
-    /** Couleur de texte au survol. */
-    private static final Color HOVER_PINK_TXT = new Color(255, 210, 230);
     /** Couleur de fond par défaut des cartes. */
     private static final Color BASE_CARD_BG = new Color(30, 30, 40);
-    /** Couleur de fond des cartes au survol. */
-    private static final Color HOVER_CARD_BG = new Color(50, 40, 60);
     /** Couleur haute du dégradé d’arrière-plan. */
     private static final Color BG_TOP = new Color(18, 18, 24);
     /** Couleur basse du dégradé d’arrière-plan. */
@@ -68,6 +68,12 @@ public final class Tool4Panel extends JPanel {
     private final JButton sendButton = new JButton("Envoyer");
     /** Bouton retour vers l’écran d’accueil. */
     private final JButton backButton = new JButton("Retour");
+    /** Libellé de réflexion/chargement. */
+    private final JLabel thinkingLabel = new JLabel("L’IA réfléchit…");
+    /** Barre de chargement. */
+    private final JProgressBar loadingBar = new JProgressBar();
+    /** Barre du bas contenant input + loader. */
+    private final JPanel bottom = new JPanel(new BorderLayout());
 
     /**
      * Constructeur recommandé : accepte une fonction « ask » et un callback de navigation.
@@ -106,8 +112,8 @@ public final class Tool4Panel extends JPanel {
         setOpaque(false);
 
         // --- Haut : titre et bouton retour ---
-        final JPanel header = new JPanel(new BorderLayout());
-        header.setOpaque(false);
+        final JPanel topBar = new JPanel(new BorderLayout());
+        topBar.setOpaque(false);
 
         styleBackButton(backButton);
         backButton.addActionListener(e -> navigator.accept("home"));
@@ -120,7 +126,7 @@ public final class Tool4Panel extends JPanel {
         topBar.add(title, BorderLayout.CENTER);
         add(topBar, BorderLayout.NORTH);
 
-        // Zone de conversation
+        // --- Zone de conversation ---
         conversationArea.setEditable(false);
         conversationArea.setWrapStyleWord(true);
         conversationArea.setLineWrap(true);
@@ -135,27 +141,24 @@ public final class Tool4Panel extends JPanel {
         scroll.getViewport().setOpaque(false);
         add(scroll, BorderLayout.CENTER);
 
-        // Zone d’entrée
-        final JPanel inputPanel = new JPanel(new BorderLayout(8, 8));
+        // --- Zone d’entrée ---
+        final JPanel inputPanel = new JPanel(new BorderLayout(6, 6));
         inputPanel.setOpaque(false);
         styleTextField(inputField);
         styleNeonButton(sendButton);
-
-        final JPanel inputPanel = new JPanel(new BorderLayout(6, 6));
-        inputPanel.setOpaque(false);
         inputPanel.add(inputField, BorderLayout.CENTER);
         inputPanel.add(sendButton, BorderLayout.EAST);
 
-        // Chargement
+        // --- Chargement ---
         thinkingLabel.setForeground(new Color(220, 220, 220));
         thinkingLabel.setFont(new Font("Segoe UI", Font.ITALIC, 13));
         thinkingLabel.setVisible(false);
 
         loadingBar.setIndeterminate(true);
-        loadingBar.setForeground(PINK_ACCENT);
+        loadingBar.setForeground(NEON_PINK);
         loadingBar.setBackground(new Color(40, 40, 50));
         loadingBar.setBorder(BorderFactory.createLineBorder(new Color(100, 100, 120), 1, true));
-        loadingBar.setPreferredSize(new Dimension(200, 6));
+        loadingBar.setPreferredSize(new java.awt.Dimension(200, 6));
         loadingBar.setVisible(false);
 
         final JPanel loadingPanel = new JPanel(new BorderLayout());
@@ -163,11 +166,12 @@ public final class Tool4Panel extends JPanel {
         loadingPanel.add(thinkingLabel, BorderLayout.NORTH);
         loadingPanel.add(loadingBar, BorderLayout.SOUTH);
 
+        bottom.setOpaque(false);
         bottom.add(inputPanel, BorderLayout.CENTER);
         bottom.add(loadingPanel, BorderLayout.SOUTH);
         add(bottom, BorderLayout.SOUTH);
 
-        // Actions
+        // --- Actions ---
         sendButton.addActionListener(e -> sendMessage());
         inputField.addActionListener(e -> sendMessage());
     }
@@ -178,7 +182,9 @@ public final class Tool4Panel extends JPanel {
      */
     private void sendMessage() {
         final String text = inputField.getText().trim();
-        if (text.isEmpty()) return;
+        if (text.isEmpty()) {
+            return;
+        }
 
         appendMessage("Vous", text, true);
         inputField.setText("");
@@ -209,6 +215,19 @@ public final class Tool4Panel extends JPanel {
     }
 
     /**
+     * Ajoute un message formaté avec auteur à la zone de conversation.
+     *
+     * @param author  auteur du message ("Vous", "IA", "Erreur")
+     * @param content contenu du message
+     * @param isUser  indique si le message vient de l’utilisateur (peut servir à styliser)
+     */
+    private void appendMessage(final String author, final String content, final boolean isUser) {
+        final String prefix = isUser ? "🧑 " : ("IA".equals(author) ? "🤖 " : "⚠ ");
+        final String msg = prefix + author + " : " + content + System.lineSeparator();
+        appendMessage(msg);
+    }
+
+    /**
      * Ajoute un message à la zone de conversation et fait défiler jusqu’en bas.
      *
      * @param msg message à appendre (peut contenir des sauts de ligne)
@@ -233,17 +252,17 @@ public final class Tool4Panel extends JPanel {
                 new LineBorder(NEON_PINK_DARK, 2, true),
                 new CompoundBorder(new LineBorder(NEON_PINK, 1, true), pad)
         ));
-        btn.addMouseListener(new MouseAdapter() {
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
-            public void mouseEntered(MouseEvent e) {
-                btn.setBackground(PINK_ACCENT);
-                btn.setForeground(Color.WHITE);
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                button.setBackground(NEON_PINK);
+                button.setForeground(Color.WHITE);
             }
 
             @Override
-            public void mouseExited(MouseEvent e) {
-                btn.setBackground(new Color(50, 40, 60));
-                btn.setForeground(Color.WHITE);
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                button.setBackground(BASE_CARD_BG);
+                button.setForeground(Color.WHITE);
             }
         });
     }
@@ -253,7 +272,7 @@ public final class Tool4Panel extends JPanel {
      *
      * @param button bouton à styliser
      */
-    private void styleBackOutlined(final JButton button) {
+    private void styleBackButton(final JButton button) {
         button.setFocusPainted(false);
         button.setContentAreaFilled(false);
         button.setOpaque(false);
@@ -261,15 +280,15 @@ public final class Tool4Panel extends JPanel {
         final EmptyBorder pad = new EmptyBorder(6, 12, 6, 12);
         button.setBorder(new CompoundBorder(new LineBorder(Color.WHITE, 1, true), pad));
         button.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        button.addMouseListener(new MouseAdapter() {
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
-            public void mouseEntered(MouseEvent e) {
-                btn.setForeground(Color.WHITE);
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                button.setForeground(Color.WHITE);
             }
 
             @Override
-            public void mouseExited(MouseEvent e) {
-                btn.setForeground(Color.LIGHT_GRAY);
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                button.setForeground(TEXT_DIM);
             }
         });
     }
@@ -305,8 +324,7 @@ public final class Tool4Panel extends JPanel {
     }
 
     /**
-     * Utilitaire de composition de bordure (exemple simple), si besoin futur.
-     * Évite une dépendance directe à {@link BorderFactory} pour chaque appel.
+     * Utilitaire de composition de bordure.
      *
      * @param color     couleur du contour
      * @param thickness épaisseur du contour
@@ -317,5 +335,6 @@ public final class Tool4Panel extends JPanel {
     private static CompoundBorder compound(final Color color, final int thickness,
                                            final EmptyBorder pad) {
         return new CompoundBorder(new LineBorder(color, thickness, true), pad);
+        // Exemple d’utilisation possible : setBorder(compound(Color.WHITE, 1, new EmptyBorder(4,4,4,4)));
     }
 }
