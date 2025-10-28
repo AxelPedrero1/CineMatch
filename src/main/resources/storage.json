@@ -113,5 +113,21 @@
 }, {
   "title" : "Jojo Rabbit",
   "status" : "pas_interesse",
-  "dateTimeIso" : "2025-10-24T10:47:38.180590600"
+  "dateTimeIso" : "2025-10-28T08:56:49.314334100"
+}, {
+  "title" : "Le Dernier Métro (1988)",
+  "status" : "envie",
+  "dateTimeIso" : "2025-10-28T08:58:23.204350300"
+}, {
+  "title" : "La Haine",
+  "status" : "pas_interesse",
+  "dateTimeIso" : "2025-10-28T08:58:32.227804800"
+}, {
+  "title" : "La Haine (La Haine, 1995)",
+  "status" : "pas_interesse",
+  "dateTimeIso" : "2025-10-28T08:58:36.875789800"
+}, {
+  "title" : "Titre Z",
+  "status" : "pas_interesse",
+  "dateTimeIso" : "2025-10-28T09:11:55.091723200"
 } ]
