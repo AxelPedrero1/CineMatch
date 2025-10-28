@@ -39,8 +39,9 @@ public final class ChatAgent {
      * (évite l’avertissement SpotBugs EI_EXPOSE_REP2).
      */
     private final Memory memory;
-    private final ConversationMemory convMemory; // 🧠 mémoire du chat
 
+    /** Mémoire courte de conversation (dernier contexte). */
+    private final ConversationMemory convMemory;
 
     /**
      * Construit un nouvel agent conversationnel basé sur Ollama, avec un profil et une mémoire interne.
@@ -89,34 +90,32 @@ public final class ChatAgent {
         final String wishStr = wishlist.isEmpty() ? "aucun film enregistré" : String.join(", ", wishlist);
         final String badStr  = disliked.isEmpty() ? "aucun film enregistré" : String.join(", ", disliked);
 
-        // Construit le message système avec le contexte conversationnel
-        final String system = String.format(
-                """
-                Tu es un expert du cinéma francophone, spécialiste des recommandations personnalisées.
-                Tes réponses doivent toujours être en français, avec un ton naturel, amical et professionnel.
+        // 3) Construit le message système sans String.format (pas de \n dans un format string)
+        final String ls = System.lineSeparator();
+        final StringBuilder sb = new StringBuilder(512);
+        sb.append("Tu es un expert du cinéma francophone, spécialiste des recommandations personnalisées.").append(ls)
+                .append("Tes réponses doivent toujours être en français, avec un ton naturel, amical et professionnel.").append(ls).append(ls)
+                .append("Voici les informations sur les goûts de l’utilisateur :").append(ls)
+                .append("- Films déjà vus : ").append(seenStr).append(ls)
+                .append("- Films qu’il souhaite voir : ").append(wishStr).append(ls)
+                .append("- Films qu’il n’aime pas : ").append(badStr).append(ls).append(ls)
+                .append("Contexte récent de la conversation :").append(ls)
+                .append(convMemory.toPromptString()).append(ls).append(ls)
+                .append("Rappelle-toi :").append(ls)
+                .append("- Ne repropose jamais un film déjà vu ou non souhaité.").append(ls)
+                .append("- Inspire-toi du contexte précédent pour rester cohérent.").append(ls)
+                .append("- Réponds de façon fluide, ≤ 100 mots, sans répétition.").append(ls);
 
-                Voici les informations sur les goûts de l’utilisateur :
-                - Films déjà vus : %s
-                - Films qu’il souhaite voir : %s
-                - Films qu’il n’aime pas : %s
+        final String system = sb.toString();
 
-                Contexte récent de la conversation :
-                %s
-
-                Rappelle-toi :
-                - Ne repropose jamais un film déjà vu ou non souhaité.
-                - Inspire-toi du contexte précédent pour rester cohérent.
-                - Réponds de façon fluide, ≤ 100 mots, sans répétition.
-                """,
-                seenStr, wishStr, badStr, convMemory.toPromptString()
-        );
         // 4) Appel à Ollama
-        String response = ollama.chat(system, userPrompt);
+        final String response = ollama.chat(system, userPrompt);
 
         // 5) Ajout de la réponse de l’IA à la mémoire
         convMemory.addAssistantMessage(response);
 
-        return response;    }
+        return response;
+    }
 
     /**
      * Retourne une nouvelle instance de {@link Memory}, garantissant l’absence
