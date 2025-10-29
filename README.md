@@ -8,6 +8,9 @@ CineMatch est une application de recommandations de films avec interface Swing a
 /
 [MainFrame.java](src/main/java/app/cinematch/ui/swing/MainFrame.java)
 
+**Image de la page d’accueil de l’application.**
+![page_principale.png](images/page_principale.png)
+
 ## Architecture logicielle
 
 ```
@@ -100,9 +103,6 @@ L’application interroge par défaut le modèle **`qwen2.5:7b-instruct`**, conf
 
 **Axel**
 - Qualité & Tests : mise en place des **outils de qualité** (JaCoCo, SpotBugs, Checkstyle) et **tests JUnit** à large couverture :
-    - Service & API : `MovieRecommenderService` (100 %), `OllamaClient` (100 %).
-    - Agent : `ChatAgent`, `Memory`, `Profile` (couverture complète).
-    - Utilitaires : `JsonStorage`, `ImageLoader` (100 %).
     - UI : suites Swing robustes (EDT-safe, headless) pour `Tool1/2/3/4Panel`, `History`, `Home`, `MainFrame`.
 - Robustesse : nombreuses **corrections SpotBugs** (copies défensives, non-sérialisation de `SwingWorker`, formats portables).
 - CI/Repo : ajustements de workflows/permissions et intégration continue orientée tests/qualité.
@@ -112,3 +112,27 @@ L’application interroge par défaut le modèle **`qwen2.5:7b-instruct`**, conf
 - Documentation : **Javadocs** sur `api`, `agent`, `model`, `uiSwing`, `util`.
 - Qualité : corrections ciblées SpotBugs (dont `ChatAgent`), **coordination & merges** réguliers des PRs.
 
+## 🧪 Tests et qualité logicielle
+
+La mise en place de tests approfondie permettant de garantir sa stabilité, sa robustesse et la conformité aux bonnes pratiques de développement.
+
+### 🔹 Méthodologie
+- Les tests unitaires ont été rédigés selon le **format BDD GIVEN / WHEN / THEN**, facilitant la lisibilité et la compréhension du comportement attendu.
+- L’ensemble des tests a été implémenté avec **JUnit 5** et **Mockito** pour le mock des dépendances et la simulation des réponses du modèle Ollama.
+- L’exécution et le suivi de la couverture sont assurés par **JaCoCo**, intégré au cycle Maven.
+
+### 🔹 Couverture
+- La couverture globale dépasse **90 %** sur l’ensemble du projet.
+- Plusieurs modules atteignent **100 %** de couverture :
+    - `MovieRecommenderService`
+    - `OllamaClient`
+    - `JsonStorage`
+    - `ImageLoader`
+- Des tests Swing spécifiques (EDT-safe, headless) ont été ajoutés pour valider la stabilité de l’interface utilisateur (`Tool1Panel` à `Tool4Panel`, `History`, `Home`, `MainFrame`).
+
+### 🔹 Outils de qualité
+- **JaCoCo** : mesure de couverture de code.
+- **Checkstyle** : respect des conventions de code Java.
+- **SpotBugs** : détection statique d’erreurs potentielles.
+
+Ces outils garantissent un code maintenable, conforme aux standards et testable à long terme.
