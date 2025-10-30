@@ -244,7 +244,7 @@ public final class Tool3Panel extends JPanel {
         describe.setEnabled(!busy);
         remove.setEnabled(!busy);
         list.setEnabled(!busy);
-        backBtn.setEnabled(!busy);
+
     }
 
     /**
