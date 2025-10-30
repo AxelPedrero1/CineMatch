@@ -160,6 +160,9 @@ public final class Tool2Panel extends JPanel {
 
     /** Propose la prochaine recommandation et lance la génération de description. */
     private void proposeNext() {
+        title.setText("...");
+        reason.setText("...");
+        platform.setText("L'ia travaille...");
         setBusy(true);
         if (descWorker != null && !descWorker.isDone()) {
             descWorker.cancel(true);
