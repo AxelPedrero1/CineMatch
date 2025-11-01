@@ -27,7 +27,7 @@ public class App {
         // Services
         MovieRecommenderService recommender = new MovieRecommenderService(ollamaUrl, ollamaModel);
         Profile profile = Profile.defaultCinemaExpert(); // <-- créer AVANT usage
-        LangChain4jAgentBridge bridge = new LangChain4jAgentBridge(ollamaUrl, ollamaModel, profile);
+        LangChain4jAgentBridge bridge = new LangChain4jAgentBridge(ollamaUrl, ollamaModel, profile, recommender);
 
         // Client Ollama (ton client REST maison, utile pour d'autres usages)
         OllamaClient ollamaClient = new OllamaClient(ollamaUrl, ollamaModel);
