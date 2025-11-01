@@ -90,10 +90,12 @@ public class MovieRecommenderService {
     public Recommendation recommendFromLike(final String likedTitle) {
         final String system =
                 "Tu es un assistant cinéma ultra créatif. Tu connais les films existants et tu peux aussi "
+                        + "N’inclus jamais : jeux vidéo, livres ou autres qui ne sont pas des films, séries ou documentaires. "
                         + "imaginer un faux service de streaming crédible. Réponds toujours en JSON strict, "
                         + "sans texte supplémentaire.";
         final String user =
                 "Film apprécié : '" + likedTitle + "'. Propose une recommandation nuancée avec ce format "
+                        + "Propose EXCLUSIVEMENT un film, série ou documentaire similaire. "
                         + "JSON : {\"title\":\"Titre exact\",\"pitch\":\"Pourquoi ce choix\",\"year\":\""
                         + "(optionnel)\",\"platform\":\"Plateforme fictive ou réelle\"}. "
                         + "Le pitch doit faire le lien avec le film donné.";
