@@ -228,8 +228,12 @@ public final class Tool3Panel extends JPanel {
         model.clear();
         final List<String> items = JsonStorage.getByStatus(status);
         for (String t : items) {
-            model.addElement(stripQuotes(t));
+            String cleaned = stripQuotes(t).trim();
+            if (!cleaned.isEmpty()) {                 // <-- évite la case vide
+                model.addElement(cleaned);
+            }
         }
+
 
         // Restaure la sélection si l’élément est encore présent ; sinon, sélectionne le 1er
         if (previouslySelected != null) {
