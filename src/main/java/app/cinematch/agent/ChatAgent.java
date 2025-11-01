@@ -1,87 +1,53 @@
 package app.cinematch.agent;
 
 import app.cinematch.api.OllamaClient;
-import java.util.List;
 
-/**
- * Représente un agent conversationnel connecté à un modèle de langage Ollama,
- * capable de générer des recommandations de films personnalisées en fonction
- * des préférences de l’utilisateur.
- *
- * <p>L’agent maintient un profil utilisateur et une mémoire interne (stateless)
- * permettant de conserver la trace des films vus, à voir ou non appréciés.
- * Il formate dynamiquement le prompt système envoyé au modèle Ollama pour
- * obtenir des réponses cohérentes et pertinentes.</p>
- *
- * <p>Exemple d’utilisation :
- * <pre>{@code
- * OllamaClient ollama = new OllamaClient("http://localhost:11434", "mistral");
- * Profile profil = new Profile("Simon");
- * ChatAgent agent = new ChatAgent(ollama, profil, null);
- * String reponse = agent.ask("Peux-tu me recommander un film français récent ?");
- * }</pre>
- *
- * @see app.cinematch.api.OllamaClient
- * @see app.cinematch.agent.Memory
- * @see app.cinematch.agent.Profile
- */
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Function;
+
 public final class ChatAgent {
 
-    /** Client Ollama utilisé pour communiquer avec le modèle de langage. */
     private final OllamaClient ollama;
-
-    /** Profil utilisateur contenant les préférences générales. */
     private Profile profile;
-
-    /**
-     * Mémoire interne stateless.
-     * Une nouvelle instance est créée localement pour éviter toute fuite de représentation
-     * (évite l’avertissement SpotBugs EI_EXPOSE_REP2).
-     */
     private final Memory memory;
-
-    /** Mémoire courte de conversation (dernier contexte). */
     private final ConversationMemory convMemory;
 
-    /**
-     * Construit un nouvel agent conversationnel basé sur Ollama, avec un profil et une mémoire interne.
-     *
-     * @param ollama  le client Ollama à utiliser pour les échanges
-     * @param profile le profil utilisateur associé à cet agent
-     * @param ignored paramètre mémoire ignoré pour éviter l’exposition d’une instance externe
-     */
+    /** Délégué optionnel (ex. LangChain4jAgentBridge::ask). */
+    private final Function<String, String> askDelegate;
+
+    /** Constructeur historique (sans délégué) */
     public ChatAgent(final OllamaClient ollama, final Profile profile, final Memory ignored) {
-        this.ollama = ollama;
-        this.profile = profile;
-        // Instance interne propre (Memory est stateless, donc pas de perte fonctionnelle)
+        this(ollama, profile, ignored, null); // ✅ initialise askDelegate à null
+    }
+
+    /** Nouveau constructeur avec délégué */
+    public ChatAgent(final OllamaClient ollama,
+                     final Profile profile,
+                     final Memory ignored,
+                     final Function<String, String> askDelegate) {
+        this.ollama = Objects.requireNonNull(ollama);
+        this.profile = Objects.requireNonNull(profile);
+        // Memory interne stateless pour éviter l'exposition externe
         this.memory = new Memory();
-        this.convMemory = new ConversationMemory(6); // garde les 6 derniers messages
+        this.convMemory = new ConversationMemory(6);
+        this.askDelegate = askDelegate; // ✅ assignation du champ final
     }
 
-    /**
-     * Met à jour le profil utilisateur associé à l’agent.
-     *
-     * @param profile le nouveau profil utilisateur à appliquer
-     */
-    public void setProfile(final Profile profile) {
-        this.profile = profile;
-    }
+    public void setProfile(final Profile profile) { this.profile = Objects.requireNonNull(profile); }
 
-    /**
-     * Envoie un message de l’utilisateur à l’agent et retourne la réponse générée par Ollama.
-     *
-     * <p>La méthode récupère les listes internes de films vus, souhaités et non appréciés
-     * depuis {@link Memory}, et les insère dans le prompt système envoyé au modèle.
-     * Le modèle adapte alors ses recommandations en conséquence.</p>
-     *
-     * @param userPrompt le message de l’utilisateur (question, demande de recommandation, etc.)
-     * @return la réponse générée par le modèle de langage
-     */
     public String ask(final String userPrompt) {
-        // 1) Ajout du message utilisateur à la mémoire
+        // Si un délégué (LangChain4j) est fourni, on lui confie la réponse
+        if (askDelegate != null) {
+            convMemory.addUserMessage(userPrompt);
+            final String response = askDelegate.apply(userPrompt);
+            convMemory.addAssistantMessage(response);
+            return response;
+        }
+
+        // ----- Flux "classique" (OllamaClient maison) -----
         convMemory.addUserMessage(userPrompt);
 
-        // 2) Construit le contexte mémoire des goûts
         final List<String> seen = memory.seen();
         final List<String> wishlist = memory.toWatch();
         final List<String> disliked = memory.notInterested();
@@ -90,7 +56,6 @@ public final class ChatAgent {
         final String wishStr = wishlist.isEmpty() ? "aucun film enregistré" : String.join(", ", wishlist);
         final String badStr  = disliked.isEmpty() ? "aucun film enregistré" : String.join(", ", disliked);
 
-        // 3) Construit le message système sans String.format (pas de \n dans un format string)
         final String ls = System.lineSeparator();
         final StringBuilder sb = new StringBuilder(512);
         sb.append("Tu es un expert du cinéma francophone, spécialiste des recommandations personnalisées.").append(ls)
@@ -106,33 +71,11 @@ public final class ChatAgent {
                 .append("- Inspire-toi du contexte précédent pour rester cohérent.").append(ls)
                 .append("- Réponds de façon fluide, ≤ 100 mots, sans répétition.").append(ls);
 
-        final String system = sb.toString();
-
-        // 4) Appel à Ollama
-        final String response = ollama.chat(system, userPrompt);
-
-        // 5) Ajout de la réponse de l’IA à la mémoire
+        final String response = ollama.chat(sb.toString(), userPrompt);
         convMemory.addAssistantMessage(response);
-
         return response;
     }
 
-    /**
-     * Retourne une nouvelle instance de {@link Memory}, garantissant l’absence
-     * de fuite de représentation interne.
-     *
-     * @return une nouvelle instance de {@link Memory}
-     */
-    public Memory getMemory() {
-        return new Memory();
-    }
-
-    /**
-     * Retourne le profil utilisateur actuellement associé à l’agent.
-     *
-     * @return le profil de l’utilisateur
-     */
-    public Profile getProfile() {
-        return profile;
-    }
+    public Memory getMemory() { return new Memory(); }
+    public Profile getProfile() { return profile; }
 }
