@@ -177,7 +177,7 @@ public class MovieRecommenderService {
 
         String pitch = firstNonBlank(parsed.pitch, defaultReason);
         if (parsed.year != null && !parsed.year.isBlank()) {
-            pitch = pitch + " (année : " + parsed.year.trim() + ")";
+            pitch = pitch + " — année suggérée : " + parsed.year.trim();
         }
 
         final String platform = firstNonBlank(parsed.platform, fallbackPlatform());
