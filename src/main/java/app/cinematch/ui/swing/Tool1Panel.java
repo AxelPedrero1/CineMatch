@@ -219,6 +219,7 @@ public final class Tool1Panel extends JPanel {
      * dans un {@link SwingWorker}.
      */
     private void onPropose() {
+
         final String liked = input.getText().trim();
         if (liked.isEmpty()) {
             return;
@@ -231,6 +232,9 @@ public final class Tool1Panel extends JPanel {
         }
 
         setDescHtml("<i>Recherche d’un film similaire…</i>");
+        title.setText("...");
+        reason.setText("...");
+        platform.setText("L'ia réfléchie...");
 
         new SwingWorker<Recommendation, Void>() {
             @Override
@@ -243,7 +247,9 @@ public final class Tool1Panel extends JPanel {
                 try {
                     current = get();
                     title.setText(current.title());
-                    reason.setText(current.reason());
+                    reason.setText("<html><div style='text-align:center; width: 500px;'>"
+                            + current.reason()
+                            + "</div></html>");
                     platform.setText(current.platform());
                     startDescriptionForCurrent();
                 } catch (final Exception ex) {
