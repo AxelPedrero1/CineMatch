@@ -29,7 +29,7 @@ public class App {
         Profile profile = Profile.defaultCinemaExpert(); // <-- créer AVANT usage
         LangChain4jAgentBridge bridge = new LangChain4jAgentBridge(ollamaUrl, ollamaModel, profile, recommender);
 
-        // Client Ollama (ton client REST maison, utile pour d'autres usages)
+        // Client Ollama (le client REST maison, utile pour d'autres usages)
         OllamaClient ollamaClient = new OllamaClient(ollamaUrl, ollamaModel);
 
         // ChatAgent qui délègue ses réponses au bridge LangChain4j (tools wishlist)
