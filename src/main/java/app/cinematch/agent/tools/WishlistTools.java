@@ -17,12 +17,22 @@ public class WishlistTools {
     @Tool("Ajoute un film à la liste d'envie (statut 'envie').")
     public String addToWishlist(@P("title") String title) {
         String cleaned = normalize(title);
-        if (cleaned.isBlank()) {
-            return "ERROR:EMPTY_TITLE"; // garde-fou pour éviter d'enregistrer une entrée vide
+        if (cleaned.isBlank()) return "ERROR:EMPTY_TITLE";
+
+        // Fallback : si l'utilisateur a donné plusieurs titres (virgules / retours ligne)
+        if (cleaned.contains(",") || cleaned.contains("\n")) {
+            int n = 0;
+            for (String part : cleaned.split("[,\n]")) {
+                String t = normalize(part);
+                if (!t.isBlank()) { JsonStorage.addOrUpdate(t, "envie"); n++; }
+            }
+            return "ADDED_MANY:" + n;
         }
+
         JsonStorage.addOrUpdate(cleaned, "envie");
         return "ADDED:" + cleaned;
     }
+
 
     @Tool("Retire un film de la liste d'envie en le marquant 'pas_interesse'.")
     public String removeFromWishlist(@P("title") String title) {
