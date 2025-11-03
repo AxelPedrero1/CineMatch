@@ -52,6 +52,86 @@ public class MaintenanceTools {
         return "STATS: total=" + total + " | envie=" + envie + " | pas_interesse=" + nope + " | deja_vu=" + seen;
     }
 
+    @Tool("Vide totalement une liste par statut. status ∈ {'envie','pas_interesse','deja_vu'}. "
+            + "mode='hard' supprime physiquement, 'soft' déplace ailleurs.")
+    public String clearStatus(@P("status") String status,
+                              @P("mode") String mode) {
+        String s = normalizeStatus(status);
+        if (s == null) {
+            return "Statut invalide. Utilisez « envie », « deja_vu » ou « pas_interesse ».";
+        }
+
+        boolean hard = (mode == null) || mode.equalsIgnoreCase("hard");
+
+        // HARD : suppression physique
+        if (hard) {
+            int n = JsonStorage.removeAllByStatus(s);
+            return friendlyClearedHard(s, n);
+        }
+
+        // SOFT : “vider” en déplaçant vers un autre statut
+        java.util.List<String> items = JsonStorage.getByStatus(s);
+        if (items == null || items.isEmpty()) {
+            return "Aucun film à déplacer depuis « " + labelStatus(s) + " ».";
+        }
+
+        String target = switch (s) {
+            case "envie" -> "pas_interesse";
+            case "pas_interesse" -> "deja_vu";
+            default -> "pas_interesse";
+        };
+
+        int n = 0;
+        for (String t : items) {
+            if (t != null && !t.isBlank()) {
+                JsonStorage.addOrUpdate(t, target);
+                n++;
+            }
+        }
+        return "Déplacé " + n + (n > 1 ? " films" : " film") + " de « "
+                + labelStatus(s) + " » vers « " + labelStatus(target) + " ».";
+    }
+
+
+    // --- helper (garde-le dans la classe) ---
+    private static String normalizeStatus(String status) {
+        if (status == null || status.isBlank()) return null;
+        String s = status.trim().toLowerCase(Locale.ROOT)
+                .replace('’','\'').replace("-", "_").replace(" ", "_");
+        if (s.contains("deja") && s.contains("vu")) s = "deja_vu";
+        if (s.contains("pas") && (s.contains("interesse") || s.contains("intéresse"))) s = "pas_interesse";
+        return switch (s) {
+            case "envie", "pas_interesse", "deja_vu" -> s;
+            default -> null;
+        };
+    }
+
+    private static String friendlyClearedHard(String status, int count) {
+        String label = labelStatus(status);
+        if (count == 0) return "Aucun film à supprimer dans « " + label + " ».";
+        return "Supprimé " + count + (count > 1 ? " films" : " film") + " de « " + label + " ».";
+    }
+
+    private static String labelStatus(String s) {
+        return switch (s) {
+            case "envie" -> "liste d’envie";
+            case "pas_interesse" -> "pas intéressé";
+            case "deja_vu" -> "déjà vu";
+            default -> s;
+        };
+    }
+
+
+    private static boolean hasRemoveMethod() {
+        try {
+            app.cinematch.util.JsonStorage.class.getMethod("remove", String.class);
+            return true;
+        } catch (NoSuchMethodException e) {
+            return false;
+        }
+    }
+
+
     private static String norm(String s) {
         if (s == null) return "";
         String t = s.replaceAll("[\"“”«»]", "").trim();

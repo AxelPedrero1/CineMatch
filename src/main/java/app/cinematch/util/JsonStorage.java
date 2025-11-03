@@ -135,4 +135,30 @@ public final class JsonStorage {
             System.err.printf(fmt, args);
         }
     }
+
+    //  suppression par titre (case-insensitive)
+    public static synchronized boolean remove(final String title) {
+        if (title == null || title.isBlank()) return false;
+        final List<HistoryEntry> all = loadAll();
+        final int before = all.size();
+        all.removeIf(e -> e.title().equalsIgnoreCase(title));
+        if (all.size() != before) {
+            saveAll(all);
+            return true;
+        }
+        return false;
+    }
+
+    // suppression de toutes les entrées d’un statut
+    public static synchronized int removeAllByStatus(final String status) {
+        if (status == null || status.isBlank()) return 0;
+        final List<HistoryEntry> all = loadAll();
+        final int before = all.size();
+        all.removeIf(e -> e.status().equalsIgnoreCase(status));
+        if (all.size() != before) {
+            saveAll(all);
+        }
+        return before - all.size();
+    }
+
 }
