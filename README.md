@@ -11,19 +11,41 @@ CineMatch est une application de recommandations de films avec interface Swing a
 **Image de la page d’accueil de l’application.**
 ![page_principale.png](images/page_principale.png)
 
+## Fonctionnalités clés
+
+- **Recommandations intelligentes** : génération d’idées à partir d’un film apprécié ou via un mode découverte aléatoire, avec enrichissement automatique (raison, plateforme, année).
+- **Mode swipe** : interface inspirée du « tinder de films » pour accepter/refuser les propositions et enregistrer un statut en un clic.
+- **Gestion de wishlist et d’historique** : stockage persistant des films vus, à voir ou ignorés, consultable depuis l’outil « Ma liste » et l’onglet Historique.
+- **Chat IA outillé** : le panneau de discussion s’appuie sur LangChain4j pour orchestrer des outils (ajout multiple, génération de description, statistiques) tout en conservant une mémoire glissante de la conversation.
+- **Persistance JSON** : toutes les actions utilisateur sont sérialisées dans `src/main/resources/storage.json`, avec surcharge possible via `-Dcinematch.storage` et mode silencieux pour les tests.
+
+
 ## Architecture logicielle
 
 ```
 src/main/java/app/cinematch
-├── App.java                 # Point d’entrée : initialisation L&F, services et UI
-├── MovieRecommenderService  # Orchestration des prompts Ollama + persistance JSON
-├── api/OllamaClient.java    # Client HTTP LangChain4j vers l’instance Ollama
-├── agent/                  
-│   ├── ChatAgent.java       # Agent conversationnel + mémoire longue durée
-│   ├── ConversationMemory.java / Memory.java / Profile.java
-├── model/…                 # Records pour les messages et recommandations
-├── ui/swing/               # Panneaux Swing (Home, outils, historique, chat)
-└── util/JsonStorage.java   # Stockage local des films marqués en JSON
+├── App.java                      # Point d’entrée : FlatLaf + injection des services
+├── MovieRecommenderService.java  # Prompts Ollama + persistance
+├── agent/
+│   ├── ChatAgent.java            # Orchestration locale + mémoire courte
+│   ├── ConversationMemory.java
+│   ├── Memory.java
+│   ├── Profile.java
+│   ├── langchain/
+│   │   ├── CineAssistant.java        # Interface LangChain4j avec règles métiers
+│   │   └── LangChain4jAgentBridge.java # Pont tools + heuristiques client
+│   └── tools/
+│       ├── WishlistTools.java        # CRUD wishlist / statuts
+│       ├── LibraryTools.java         # Accès JsonStorage depuis l’agent
+│       ├── ViewingTools.java         # Génération descriptions / next-to-watch
+│       ├── MaintenanceTools.java
+│       ├── BulkTools.java
+│       └── MultiActionTools.java
+├── api/OllamaClient.java          # Client HTTP pour le modèle Ollama
+├── model/…                        # Records (Recommendation, HistoryEntry, …)
+├── ui/swing/                      # Fenêtres/panneaux (Home, Tool1-4, History)
+└── util/JsonStorage.java          # Persistance JSON thread-safe
+
 ```
 
 - **App** initialise FlatLaf, configure le client Ollama (URL et modèle via variables d’environnement) et instancie la fenêtre principale.
@@ -47,28 +69,25 @@ src/main/java/app/cinematch
 
 ### Étapes
 
-1. Cloner le dépôt puis l'ouvrir avec l'IDE de son choix :
+1. **Cloner le dépôt** :
    ```bash
    git clone <url-du-depot>
-   cd <nom-du-dossier>
+   cd tsettssea
    ```
-2. Sur un autre cmd, installer ollama et télécharger le modèle (`qwen2.5:7b-instruct`) :
+2. **Préparer Ollama** (dans un terminal séparé) :
    ```bash
    ollama pull qwen2.5:7b-instruct
-   ```
-3. Lancer le server ollama local dans ce même cmd (`qwen2.5:7b-instruct`) :
-   ```bash
    ollama serve
    ```
-4. Sur le projet clôné précédemment, lancer la compilation et l’exécution :
+3. **Configurer les variables (optionnel)** :
+   ```bash
+   export OLLAMA_BASE_URL="http://localhost:11434"
+   export OLLAMA_MODEL="qwen2.5:7b-instruct"
+   ```
+4. **Compiler et lancer l’application** :
    ```bash
    mvn clean package
    mvn exec:java -Dexec.mainClass=app.cinematch.App
-   ```
-5. (Optionnel) Générer les rapports qualité :
-   ```bash
-   mvn verify
-   mvn site
    ```
 
 **💡 Remarques :**
@@ -92,9 +111,9 @@ L’application interroge par défaut le modèle **`qwen2.5:7b-instruct`**, conf
 - Création et paramétrage du **dépôt GitHub** pour le travail collaboratif.
 - Installation d’**Ollama** et du **modèle de langage choisi (Gwen)**.
 - Développement des **trois outils principaux** :
-    - 🎲 Découverte aléatoire de films.
-    - 🎬 Suggestion de films similaires à un titre donné.
-    - 🕓 Consultation de l’historique et des avis enregistrés.
+    -  Découverte aléatoire de films.
+    -  Suggestion de films similaires à un titre donné.
+    -  Consultation de l’historique et des avis enregistrés.
 
 **Léo**
 - IA & Agent : ajout de l’agent conversationnel (`feature/AgentMemory`) et de la **mémoire de conversation** (`feature/ConversationMemory`).
@@ -112,7 +131,7 @@ L’application interroge par défaut le modèle **`qwen2.5:7b-instruct`**, conf
 - Documentation : **Javadocs** sur `api`, `agent`, `model`, `uiSwing`, `util`.
 - Qualité : corrections ciblées SpotBugs (dont `ChatAgent`), **coordination & merges** réguliers des PRs.
 
-## 🧪 Tests et qualité logicielle
+## Tests et qualité logicielle
 
 La mise en place de tests approfondie permettant de garantir sa stabilité, sa robustesse et la conformité aux bonnes pratiques de développement.
 
@@ -136,3 +155,14 @@ La mise en place de tests approfondie permettant de garantir sa stabilité, sa r
 - **SpotBugs** : détection statique d’erreurs potentielles.
 
 Ces outils garantissent un code maintenable, conforme aux standards et testable à long terme.
+
+## Agent IA & LangChain4j
+
+- `App` instancie un `LangChain4jAgentBridge` configuré sur Ollama (`OLLAMA_BASE_URL`, `OLLAMA_MODEL`) et l’injecte dans `ChatAgent` via un délégué fonctionnel.
+[App.java](src/main/java/app/cinematch/App.java)
+- Le bridge expose un contrat `CineAssistant` doté d’un prompt système contraignant l’usage des outils et la formulation des réponses.
+[CineAssistant.java](src/main/java/app/cinematch/agent/langchain/CineAssistant.java)
+- Des outils LangChain4j spécialisés traduisent les intentions en appels métier : ajout/suppression en masse, modifications de statut, statistiques, recommandations à regarder ensuite, etc.
+[MultiActionTools.java](src/main/java/app/cinematch/agent/tools/MultiActionTools.java)
+- Un pré-traitement côté client gère les commandes d’ajout multiple avant délégation au LLM, garantissant robustesse même hors connexion modèle.
+[LangChain4jAgentBridge.java](src/main/java/app/cinematch/agent/langchain/LangChain4jAgentBridge.java)
