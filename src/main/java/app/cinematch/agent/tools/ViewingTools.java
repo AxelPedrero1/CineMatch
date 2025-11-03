@@ -5,14 +5,13 @@ import app.cinematch.util.JsonStorage;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class ViewingTools {
 
     private final MovieRecommenderService service;
-    private final Random rnd = new Random();
 
     public ViewingTools(MovieRecommenderService service) {
         this.service = service;
@@ -22,7 +21,7 @@ public class ViewingTools {
             "strategy='random' ou 'first'. withDescription='true' pour inclure une courte description.")
     public String pickNextToWatch(@P("strategy") String strategy, @P("withDescription") String withDescription) {
         // copie défensive -> liste mutable
-        java.util.List<String> wl = new java.util.ArrayList<>(app.cinematch.util.JsonStorage.getByStatus("envie"));
+        List<String> wl = new ArrayList<>(JsonStorage.getByStatus("envie"));
 
         wl.removeIf(s -> s == null || s.trim().isEmpty());
         if (wl.isEmpty()) return "NEXT:EMPTY";
@@ -31,7 +30,7 @@ public class ViewingTools {
         if ("first".equalsIgnoreCase(strategy)) {
             pick = wl.get(0);
         } else {
-            pick = wl.get(new java.util.Random().nextInt(wl.size()));
+            pick = wl.get(ThreadLocalRandom.current().nextInt(wl.size()));
         }
         pick = pick.replaceAll("[\"“”«»]", "").trim();
 
