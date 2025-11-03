@@ -46,7 +46,7 @@ import javax.swing.border.LineBorder;
  * <p><b>Amélioration :</b> ajout de 3 boutons de filtre pour afficher
  * les listes par statut : {@code "envie"}, {@code "pas_interesse"}, {@code "deja_vu"}.</p>
  */
-public final class Tool3Panel extends JPanel {
+public final class WishlistPanel extends JPanel {
 
     /** Service de recommandation (utilisé pour générer des descriptions). */
     private final MovieRecommenderService service;
@@ -108,8 +108,8 @@ public final class Tool3Panel extends JPanel {
      * @param navigator callback de navigation (ex. {@code "home"}) (non {@code null})
      * @throws NullPointerException si {@code service} ou {@code navigator} est {@code null}
      */
-    public Tool3Panel(final MovieRecommenderService service,
-                      final Consumer<String> navigator) {
+    public WishlistPanel(final MovieRecommenderService service,
+                         final Consumer<String> navigator) {
         this.service = Objects.requireNonNull(service, "service must not be null");
         this.navigator = Objects.requireNonNull(navigator, "navigator must not be null");
 

@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Couverture UI de l'aide (showHelpDialog + A-/Défaut/A+/Fermer) et buildHelpHtml(double).
  * GIVEN / WHEN / THEN au début des blocs uniquement.
  */
-class Tool4PanelHelpUiTest {
+class ChatPanelHelpUiTest {
 
     // Helpers réflexion & recherche de composants
     @SuppressWarnings("unchecked")
@@ -31,9 +31,9 @@ class Tool4PanelHelpUiTest {
         }
     }
 
-    private static double getHelpScale(Tool4Panel panel) {
+    private static double getHelpScale(ChatPanel panel) {
         try {
-            Field f = Tool4Panel.class.getDeclaredField("helpScale");
+            Field f = ChatPanel.class.getDeclaredField("helpScale");
             f.setAccessible(true);
             return f.getDouble(panel);
         } catch (Exception e) {
@@ -73,7 +73,7 @@ class Tool4PanelHelpUiTest {
     void givenInfoButton_whenClicked_thenDialogOpensAndZoomButtonsWork() throws Exception {
         // GIVEN
         Assumptions.assumeFalse(GraphicsEnvironment.isHeadless(), "Test UI ignoré en mode headless");
-        Tool4Panel panel = new Tool4Panel(s -> "ok", s -> {});
+        ChatPanel panel = new ChatPanel(s -> "ok", s -> {});
         JButton info = getPrivate(panel, "infoButton");
         double initial = getHelpScale(panel);
         assertEquals(0.9d, initial, 1e-9);
@@ -129,7 +129,7 @@ class Tool4PanelHelpUiTest {
     void givenF1Action_whenInvoked_thenDialogOpens() throws Exception {
         // GIVEN
         Assumptions.assumeFalse(GraphicsEnvironment.isHeadless(), "Test UI ignoré en mode headless");
-        Tool4Panel panel = new Tool4Panel(s -> "ok", s -> {});
+        ChatPanel panel = new ChatPanel(s -> "ok", s -> {});
         Action action = panel.getActionMap().get("showHelp");
         assertNotNull(action);
 
@@ -148,10 +148,10 @@ class Tool4PanelHelpUiTest {
     @DisplayName("buildHelpHtml(double) & buildHelpHtml(): remplacements des tokens et tailles cohérentes")
     void givenScales_whenBuildHelpHtml_thenTokensAreReplaced() throws Exception {
         // GIVEN
-        Tool4Panel panel = new Tool4Panel(s -> "ok", s -> {});
-        Method mScaled = Tool4Panel.class.getDeclaredMethod("buildHelpHtml", double.class);
+        ChatPanel panel = new ChatPanel(s -> "ok", s -> {});
+        Method mScaled = ChatPanel.class.getDeclaredMethod("buildHelpHtml", double.class);
         mScaled.setAccessible(true);
-        Method mDefault = Tool4Panel.class.getDeclaredMethod("buildHelpHtml");
+        Method mDefault = ChatPanel.class.getDeclaredMethod("buildHelpHtml");
         mDefault.setAccessible(true);
 
         // WHEN

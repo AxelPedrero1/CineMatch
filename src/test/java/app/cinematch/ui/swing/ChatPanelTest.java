@@ -22,7 +22,7 @@ import static org.mockito.Mockito.*;
  * Tests unitaires du nouveau Tool4Panel.
  * Style "given / when / then" avec couverture complète.
  */
-class Tool4PanelTest {
+class ChatPanelTest {
 
     @BeforeAll
     static void setupHeadless() {
@@ -77,7 +77,7 @@ class Tool4PanelTest {
     @Test
     void givenAskThrows_whenSend_thenErrorAppearsAndLoaderStops() throws Exception {
         Function<String, String> failing = s -> { throw new RuntimeException("Boom"); };
-        Tool4Panel panel = new Tool4Panel(failing, s -> {});
+        ChatPanel panel = new ChatPanel(failing, s -> {});
         JTextField input = getPrivate(panel, "inputField");
         JButton send = getPrivate(panel, "sendButton");
         JTextPane pane = getPrivate(panel, "conversationPane");
@@ -92,7 +92,7 @@ class Tool4PanelTest {
     @Test
     void givenEmptyInput_whenSend_thenNothingChanges() throws Exception {
         Function<String, String> askFn = s -> "Ne devrait pas être appelé";
-        Tool4Panel panel = new Tool4Panel(askFn, s -> {});
+        ChatPanel panel = new ChatPanel(askFn, s -> {});
         JTextField input = getPrivate(panel, "inputField");
         JButton send = getPrivate(panel, "sendButton");
         JTextPane pane = getPrivate(panel, "conversationPane");
@@ -107,7 +107,7 @@ class Tool4PanelTest {
     @Test
     void givenBackButton_whenClicked_thenNavigatorIsCalled() throws Exception {
         AtomicReference<String> nav = new AtomicReference<>();
-        Tool4Panel panel = new Tool4Panel(s -> "ok", nav::set);
+        ChatPanel panel = new ChatPanel(s -> "ok", nav::set);
         JButton back = getPrivate(panel, "backButton");
 
         onEDTAndWait(back::doClick);
@@ -116,7 +116,7 @@ class Tool4PanelTest {
 
     @Test
     void givenButtons_whenHover_thenColorsChange() {
-        Tool4Panel panel = new Tool4Panel(s -> "ok", s -> {});
+        ChatPanel panel = new ChatPanel(s -> "ok", s -> {});
         JButton send = getPrivate(panel, "sendButton");
         JButton back = getPrivate(panel, "backButton");
 
@@ -145,7 +145,7 @@ class Tool4PanelTest {
 
     @Test
     void givenPanel_whenPaintComponent_thenGradientDrawsProperly() {
-        Tool4Panel panel = new Tool4Panel(s -> "ok", s -> {});
+        ChatPanel panel = new ChatPanel(s -> "ok", s -> {});
         panel.setSize(300, 150);
 
         BufferedImage img = new BufferedImage(300, 150, BufferedImage.TYPE_INT_ARGB);
@@ -159,7 +159,7 @@ class Tool4PanelTest {
 
     @Test
     void givenPrivateCompound_whenCalledByReflection_thenReturnsCompoundBorder() {
-        Tool4Panel panel = new Tool4Panel(s -> "ok", s -> {});
+        ChatPanel panel = new ChatPanel(s -> "ok", s -> {});
         Object border = callPrivate(panel, "compound",
                 new Class[]{Color.class, int.class, EmptyBorder.class},
                 Color.WHITE, 2, new EmptyBorder(1, 1, 1, 1));
@@ -171,7 +171,7 @@ class Tool4PanelTest {
     void givenSecondConstructorWithChatAgent_whenSend_thenUsesAgentAsk() throws Exception {
         ChatAgent agent = mock(ChatAgent.class);
         when(agent.ask("Ping")).thenReturn("Pong");
-        Tool4Panel panel = new Tool4Panel(agent, s -> {});
+        ChatPanel panel = new ChatPanel(agent, s -> {});
         JTextField input = getPrivate(panel, "inputField");
         JButton send = getPrivate(panel, "sendButton");
         JTextPane pane = getPrivate(panel, "conversationPane");

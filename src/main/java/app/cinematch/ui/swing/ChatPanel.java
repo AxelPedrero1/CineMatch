@@ -15,7 +15,7 @@ import java.util.function.Function;
  * Interface de discussion moderne avec l’IA (ChatAgent).
  * Style inspiré des chats modernes : bulles, transition fluide, chargement animé.
  */
-public final class Tool4Panel extends JPanel {
+public final class ChatPanel extends JPanel {
 
     /** Couleurs principales. */
     private static final Color BG_TOP = new Color(18, 18, 24);
@@ -46,14 +46,14 @@ public final class Tool4Panel extends JPanel {
     // Zoom de l’aide (par défaut comme "A-" au max)
     private double helpScale = HELP_DEFAULT;
 
-    public Tool4Panel(final Function<String, String> askFunction,
-                      final Consumer<String> navigationCallback) {
+    public ChatPanel(final Function<String, String> askFunction,
+                     final Consumer<String> navigationCallback) {
         this.askFn = Objects.requireNonNull(askFunction);
         this.navigator = Objects.requireNonNull(navigationCallback);
         buildUi();
     }
 
-    public Tool4Panel(final ChatAgent agent, final Consumer<String> navigationCallback) {
+    public ChatPanel(final ChatAgent agent, final Consumer<String> navigationCallback) {
         this(Objects.requireNonNull(agent)::ask,
                 Objects.requireNonNull(navigationCallback));
     }

@@ -38,7 +38,7 @@ import javax.swing.border.LineBorder;
  *
  * <p>Conçu pour ne pas bloquer l’EDT, avec annulation des workers si nécessaire.</p>
  */
-public final class Tool2Panel extends JPanel {
+public final class SwipeRecommenderPanel extends JPanel {
 
     /** Service de recommandation. */
     private final MovieRecommenderService service;
@@ -83,8 +83,8 @@ public final class Tool2Panel extends JPanel {
      * @param navigator callback de navigation (non {@code null})
      * @throws NullPointerException si un argument est {@code null}
      */
-    public Tool2Panel(final MovieRecommenderService service,
-                      final Consumer<String> navigator) {
+    public SwipeRecommenderPanel(final MovieRecommenderService service,
+                                 final Consumer<String> navigator) {
         this.service = Objects.requireNonNull(service, "service must not be null");
         this.navigator = Objects.requireNonNull(navigator, "navigator must not be null");
 
