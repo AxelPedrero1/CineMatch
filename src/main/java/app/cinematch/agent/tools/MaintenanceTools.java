@@ -10,11 +10,15 @@ public class MaintenanceTools {
 
     @Tool("Supprime visuellement les entrées vides/quotes-only d'une liste en les marquant 'pas_interesse'.")
     public String pruneBlanksInStatus(@P("status") String status) {
-        String st = normStatus(status);
+        String st = normalizeStatus(status);
+        if (st == null) st = "envie";
         int n = 0;
         for (String t : JsonStorage.getByStatus(st)) {
             String cleaned = norm(t);
-            if (cleaned.isBlank()) { JsonStorage.addOrUpdate(cleaned, "pas_interesse"); n++; }
+            if (cleaned.isBlank()) {
+                JsonStorage.addOrUpdate(cleaned, "pas_interesse");
+                n++;
+            }
         }
         return "PRUNED:" + n + " in " + st;
     }
@@ -94,17 +98,35 @@ public class MaintenanceTools {
 
 
     // --- helper (garde-le dans la classe) ---
+    // -- remplace TOUT le bloc normalizeStatus(...) par ceci :
     private static String normalizeStatus(String status) {
         if (status == null || status.isBlank()) return null;
-        String s = status.trim().toLowerCase(Locale.ROOT)
-                .replace('’','\'').replace("-", "_").replace(" ", "_");
-        if (s.contains("deja") && s.contains("vu")) s = "deja_vu";
-        if (s.contains("pas") && (s.contains("interesse") || s.contains("intéresse"))) s = "pas_interesse";
+
+        String s = status.trim()
+                .toLowerCase(Locale.ROOT)
+                .replace('’','\'')
+                .replace("-", " ")
+                .replace("_", " ");
+
+        // Accent folding: "intéressé" -> "interesse", "déjà" -> "deja", etc.
+        s = java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", ""); // supprime les diacritiques
+
+        // Normalise espaces multiples
+        s = s.replaceAll("\\s{2,}", " ").trim();
+
+        // Mappages robustes
+        if (s.contains("deja") && s.contains("vu")) return "deja_vu";
+        if (s.contains("pas") && s.contains("interess")) return "pas_interesse";
+        if (s.contains("envie") || s.contains("wish"))  return "envie";
+
+        // Whitelist finale
         return switch (s) {
             case "envie", "pas_interesse", "deja_vu" -> s;
             default -> null;
         };
     }
+
 
     private static String friendlyClearedHard(String status, int count) {
         String label = labelStatus(status);
