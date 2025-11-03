@@ -306,7 +306,7 @@ public final class ChatPanel extends JPanel {
         );
         dlg.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 
-        final JEditorPane pane = new JEditorPane("text/html", buildHelpHtml(helpScale));
+        final JEditorPane pane = new JEditorPane("text/html", buildHelpHtml());
         pane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
         pane.setEditable(false);
         pane.setOpaque(false);
