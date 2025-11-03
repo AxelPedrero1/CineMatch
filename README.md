@@ -24,23 +24,28 @@ CineMatch est une application de recommandations de films avec interface Swing a
 
 ```
 src/main/java/app/cinematch
-├── App.java                     # Point d’entrée : FlatLaf + injection des services
-├── MovieRecommenderService.java # Prompts Ollama + persistance
+├── App.java                      # Point d’entrée : FlatLaf + injection des services
+├── MovieRecommenderService.java  # Prompts Ollama + persistance
 ├── agent/
-│   ├── ChatAgent.java          # Orchestration locale + mémoire courte
-│   ├── ConversationMemory.java / Memory.java / Profile.java
+│   ├── ChatAgent.java            # Orchestration locale + mémoire courte
+│   ├── ConversationMemory.java
+│   ├── Memory.java
+│   ├── Profile.java
 │   ├── langchain/
-│   │   ├── CineAssistant.java  # Interface LangChain4j avec règles métiers
+│   │   ├── CineAssistant.java        # Interface LangChain4j avec règles métiers
 │   │   └── LangChain4jAgentBridge.java # Pont tools + heuristiques client
 │   └── tools/
-│       ├── WishlistTools.java  # CRUD wishlist / statuts
-│       ├── LibraryTools.java   # Accès JsonStorage depuis l’agent
-│       ├── ViewingTools.java   # Génération descriptions / next-to-watch
-│       ├── MaintenanceTools.java / BulkTools.java / MultiActionTools.java
-├── api/OllamaClient.java       # Client HTTP pour le modèle Ollama
-├── model/…                     # Records (Recommendation, HistoryEntry, …)
-├── ui/swing/                   # Fenêtres/panneaux (Home, Tool1-4, History)
-└── util/JsonStorage.java       # Persistance JSON thread-safe
+│       ├── WishlistTools.java        # CRUD wishlist / statuts
+│       ├── LibraryTools.java         # Accès JsonStorage depuis l’agent
+│       ├── ViewingTools.java         # Génération descriptions / next-to-watch
+│       ├── MaintenanceTools.java
+│       ├── BulkTools.java
+│       └── MultiActionTools.java
+├── api/OllamaClient.java          # Client HTTP pour le modèle Ollama
+├── model/…                        # Records (Recommendation, HistoryEntry, …)
+├── ui/swing/                      # Fenêtres/panneaux (Home, Tool1-4, History)
+└── util/JsonStorage.java          # Persistance JSON thread-safe
+
 ```
 
 - **App** initialise FlatLaf, configure le client Ollama (URL et modèle via variables d’environnement) et instancie la fenêtre principale.
