@@ -7,6 +7,7 @@ import app.cinematch.agent.tools.MaintenanceTools;
 import app.cinematch.agent.tools.ViewingTools;
 import app.cinematch.agent.tools.WishlistTools;
 import app.cinematch.agent.tools.LibraryTools;
+import app.cinematch.agent.tools.MultiActionTools;
 
 import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
@@ -48,7 +49,8 @@ public final class LangChain4jAgentBridge {
                         new LibraryTools(service),
                         bulkTools,
                         new MaintenanceTools(),
-                        new ViewingTools(service)
+                        new ViewingTools(service),
+                        new MultiActionTools()
                 )
                 .chatMemory(memory)
                 .build();
@@ -56,6 +58,9 @@ public final class LangChain4jAgentBridge {
 
     public String ask(String userPrompt) {
         String handled = tryClientSideBulkAdd(userPrompt);
+        if (MultiActionTools.shouldForceMulti(userPrompt)) {
+            return new MultiActionTools().mixedActions(userPrompt);
+        }
         if (handled != null) return handled;
         return assistant.chat(userPrompt);
     }
