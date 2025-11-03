@@ -94,14 +94,20 @@ public final class MultiActionTools {
                     }
                 }
 
-                // 2.2 Ajout à la wishlist ("ajoute ... à ma liste/envie")
-                if (containsAny(segLc, ADD_VERBS) && containsAny(segLc, LIST_HINTS)) {
-                    for (String t : extractTitlesAroundVerb(seg, segLc, ADD_VERBS,
-                            Set.of(" à ", " a ", " dans ", " sur "))) {
+                // 2.2 Ajout à la wishlist (ne PAS exiger "liste/wishlist" : "ajoute Alien, Heat" doit marcher)
+                if (containsAny(segLc, ADD_VERBS)) {
+                    List<String> titles = extractTitlesAroundVerb(seg, segLc, ADD_VERBS,
+                            Set.of(" à ", " a ", " dans ", " sur "));
+                    if (titles.isEmpty()) {
+                        // fallback si pas trouvé après le verbe : on tente un split direct du segment
+                        titles = splitAndSanitize(QUOTES.matcher(seg).replaceAll(""));
+                    }
+                    for (String t : titles) {
                         if (!t.isBlank()) plan.add(new Add(t));
                     }
                     continue;
                 }
+
 
                 // 2.3 Suppression / retrait
                 if (containsAny(segLc, REMOVE_VERBS)) {
@@ -173,11 +179,23 @@ public final class MultiActionTools {
             }
 
             String slice = seg.substring(start, end);
-            List<String> quoted = extractQuotedTitles(slice);
-            if (!quoted.isEmpty()) return quoted;
 
-            return splitAndSanitize(slice);
+            // On prend les titres guillemetés ET les non guillemetés
+            // On deduplique en conservant l'ordre d'apparition
+            java.util.Set<String> titles = new java.util.LinkedHashSet<>();
+
+            // 1) D’abord les titres entre guillemets (prioritaires)
+            titles.addAll(extractQuotedTitles(slice));
+
+            // 2) Puis le reste (CSV / "et"), en supprimant juste les caractères de guillemets
+            titles.addAll(splitAndSanitize(QUOTES.matcher(slice).replaceAll("")));
+
+            // Certains parseurs peuvent réintroduire du bruit : on filtre les vides
+            titles.removeIf(t -> t == null || t.isBlank());
+
+            return new java.util.ArrayList<>(titles);
         }
+
 
         /** Pour "marque X comme/en STATUS" ou "mets X en STATUS". */
         private static List<String> extractTitlesForStatus(String seg, String segLc) {
