@@ -81,7 +81,7 @@ public final class Tool4Panel extends JPanel {
 
         // Bouton "help" FlatLaf : icône "?"
         infoButton.putClientProperty("JButton.buttonType", "help");
-        infoButton.setToolTipText("Aide & commandes (F1)");
+        infoButton.setToolTipText("Aide & commandes (F1) — multi-actions, statuts et exemples");
         infoButton.setFocusable(false);
         infoButton.setPreferredSize(new Dimension(40, 40)); // plus grand
         infoButton.addActionListener(e -> showHelpDialog());
@@ -360,7 +360,6 @@ public final class Tool4Panel extends JPanel {
         dlg.setLocationRelativeTo(this);
         dlg.setVisible(true);
     }
-
     /** Contenu HTML de l’aide, avec tailles dépendantes de 'scale' (sans String.format). */
     private String buildHelpHtml(double scale) {
         // Calcule des tailles en px selon l’échelle
@@ -371,66 +370,85 @@ public final class Tool4Panel extends JPanel {
         int HINT = (int) Math.round(14 * scale);
         int PAD  = (int) Math.round(12 * scale);
 
-        // CSS avec tokens
+        // CSS
         String css = """
-          <style>
-            body{font-family:'Segoe UI',sans-serif;color:#f5f5f5;background:#1b1b22;}
-            h1{margin:0 0 8px;}
-            h2{margin:16px 0 6px;color:#ffd2ea;}
-            ul{margin:6px 0 10px 22px;}
-            li{margin:6px 0;}
-            code{background:#2a2833;padding:2px 8px;border-radius:8px;display:inline-block;}
-            .hint{color:#ccccdd;}
-            .box{background:#222231;border:1px solid #51425e;border-radius:10px;padding:{PAD}px;}
-          </style>
-        """;
+      <style>
+        body{font-family:'Segoe UI',sans-serif;color:#f5f5f5;background:#1b1b22;}
+        h1{margin:0 0 8px;}
+        h2{margin:16px 0 6px;color:#ffd2ea;}
+        ul{margin:6px 0 10px 22px;}
+        li{margin:6px 0;}
+        code{background:#2a2833;padding:2px 8px;border-radius:8px;display:inline-block;}
+        .hint{color:#ccccdd;}
+        .box{background:#222231;border:1px solid #51425e;border-radius:10px;padding:{PAD}px;}
+        .tags{margin:6px 0 10px 0;}
+        .tag{display:inline-block;margin:2px 6px 2px 0;padding:2px 8px;border-radius:10px;background:#2a2833;border:1px solid #51425e;font-size:90%;}
+      </style>
+    """;
 
-        // HTML avec tokens (on peut mettre des % sans souci)
+        // HTML
         String html = """
-          <html><body style="font-size:{BODY}px; line-height:1.55;">
-          <h1 style="font-size:{H1}px;">Que puis-je demander à l’agent IA ?</h1>
+      <html><body style="font-size:{BODY}px; line-height:1.55;">
+      <h1 style="font-size:{H1}px;">Que puis-je demander à l’agent IA ?</h1>
 
-          <div class='box'>
-            <h2 style="font-size:{H2}px;">Wishlist (liste d’envie)</h2>
-            <ul>
-              <li><b>Ajouter</b> : <code style="font-size:{CODE}px;">Ajoute "Le Samouraï" à ma wishlist</code></li>
-              <li><b>Retirer</b> : <code style="font-size:{CODE}px;">Enlève Matrix de ma wishlist</code></li>
-              <li><b>Afficher</b> : <code style="font-size:{CODE}px;">Affiche ma liste d’envie</code></li>
-              <li><b>Ajout multiple (instantané)</b> : <code style="font-size:{CODE}px;">Ajoute Alien, Heat, Drive à ma wishlist</code></li>
-            </ul>
+      <div class='box'>
+        <h2 style="font-size:{H2}px;">Actions combinées (orchestrateur)</h2>
+        <ul>
+          <li><b>Plusieurs actions en une phrase</b> : <code style="font-size:{CODE}px;">Ajoute Drive à ma liste et supprime Dune de ma liste</code></li>
+          <li><b>Changement de statut en lot</b> : <code style="font-size:{CODE}px;">Mets Alien, Heat, Drive en deja_vu</code></li>
+          <li><b>Mix ajout/retrait</b> : <code style="font-size:{CODE}px;">Ajoute "Blade Runner 2049"; puis supprime Parasite.</code></li>
+        </ul>
+        <div class="tags">
+          <span class="tag">Mots-clefs multi-actions : <i>et</i>, <i>puis</i>, <i>;</i>, <i>.</i></span>
+          <span class="tag">Comprend titres "entre guillemets"</span>
+          <span class="tag">CSV : <i>Alien, Heat, Drive</i></span>
+        </div>
 
-            <h2 style="font-size:{H2}px;">Statuts des films</h2>
-            <ul>
-              <li><b>Déjà vu</b> : <code style="font-size:{CODE}px;">J’ai vu Dune, marque-le déjà vu</code></li>
-              <li><b>Pas intéressé</b> : <code style="font-size:{CODE}px;">Je n’aime pas Matrix</code></li>
-              <li><b>Changer statut</b> : <code style="font-size:{CODE}px;">Mets Jojo Rabbit en pas_interesse</code></li>
-              <li><b>En lot</b> : <code style="font-size:{CODE}px;">Mets Alien, Heat, Drive en deja_vu</code></li>
-            </ul>
+        <h2 style="font-size:{H2}px;">Wishlist (liste d’envie)</h2>
+        <ul>
+          <li><b>Ajouter</b> : <code style="font-size:{CODE}px;">Ajoute "Le Samouraï" à ma wishlist</code></li>
+          <li><b>Retirer</b> : <code style="font-size:{CODE}px;">Enlève Matrix de ma wishlist</code></li>
+          <li><b>Afficher</b> : <code style="font-size:{CODE}px;">Affiche ma liste d’envie</code></li>
+          <li><b>Ajout multiple (instantané)</b> : <code style="font-size:{CODE}px;">Ajoute Alien, Heat, Drive à ma wishlist</code></li>
+        </ul>
 
-            <h2 style="font-size:{H2}px;">Descriptions & choix</h2>
-            <ul>
-              <li><b>Description courte</b> : <code style="font-size:{CODE}px;">Décris Jojo Rabbit</code></li>
-              <li><b>Prochain à regarder</b> : <code style="font-size:{CODE}px;">Propose-moi le prochain film (au hasard)</code></li>
-            </ul>
+        <h2 style="font-size:{H2}px;">Statuts des films</h2>
+        <ul>
+          <li><b>Déjà vu</b> : <code style="font-size:{CODE}px;">J’ai vu Dune, marque-le déjà vu</code></li>
+          <li><b>Pas intéressé</b> : <code style="font-size:{CODE}px;">Je n’aime pas Matrix</code></li>
+          <li><b>Changer statut</b> : <code style="font-size:{CODE}px;">Mets Jojo Rabbit en pas_interesse</code></li>
+          <li><b>En lot</b> : <code style="font-size:{CODE}px;">J'ai déja vu Alien, Heat, Drive</code></li>
+        </ul>
+        <div class="tags">
+          <span class="tag">Statuts valides : <b>envie</b>, <b>deja_vu</b>, <b>pas_interesse</b></span>
+          <span class="tag">Synonymes compris : <i>déjà vu / deja vu</i>, <i>pas intéressé</i></span>
+        </div>
 
-            <h2 style="font-size:{H2}px;">Maintenance & tri</h2>
-            <ul>
-              <li><b>Nettoyage</b> : <code style="font-size:{CODE}px;">Nettoie les entrées vides de ma wishlist</code></li>
-              <li><b>Renommer</b> : <code style="font-size:{CODE}px;">Renomme Le seigneur des anneaux en The Lord of the Rings</code></li>
-              <li><b>Tri</b> : <code style="font-size:{CODE}px;">Affiche ma wishlist triée de A à Z</code></li>
-              <li><b>Stats</b> : <code style="font-size:{CODE}px;">Donne les statistiques de mes listes</code></li>
-            </ul>
+        <h2 style="font-size:{H2}px;">Descriptions & choix</h2>
+        <ul>
+          <li><b>Description courte</b> : <code style="font-size:{CODE}px;">Décris Jojo Rabbit</code></li>
+          <li><b>Prochain à regarder</b> : <code style="font-size:{CODE}px;">Propose-moi le prochain film (au hasard)</code></li>
+        </ul>
 
-            <h2 style="font-size:{H2}px;">Astuce</h2>
-            <ul>
-              <li>Après une action, clique <b>Rafraîchir</b> dans l’onglet <i>Ma liste</i> pour voir la mise à jour.</li>
-              <li>Raccourci : touche <b>F1</b> pour rouvrir cette aide.</li>
-            </ul>
-          </div>
+        <h2 style="font-size:{H2}px;">Maintenance & tri</h2>
+        <ul>
+          <li><b>Nettoyage</b> : <code style="font-size:{CODE}px;">Nettoie les entrées vides de ma wishlist</code></li>
+          <li><b>Renommer</b> : <code style="font-size:{CODE}px;">Renomme Le seigneur des anneaux en The Lord of the Rings</code></li>
+          <li><b>Tri</b> : <code style="font-size:{CODE}px;">Affiche ma wishlist triée de A à Z</code></li>
+          <li><b>Stats</b> : <code style="font-size:{CODE}px;">Donne les statistiques de mes listes</code></li>
+        </ul>
 
-          <p class='hint' style="font-size:{HINT}px;">L’agent comprend le langage naturel. Tu peux combiner : “Recommande 3 films, ajoute le 2e à ma wishlist et décris-le.”</p>
-          </body></html>
-        """;
+        <h2 style="font-size:{H2}px;">Astuces</h2>
+        <ul>
+          <li>Après une action, clique <b>Rafraîchir</b> dans l’onglet <i>Ma liste</i> pour voir la mise à jour.</li>
+          <li>Raccourci : touche <b>F1</b> pour rouvrir cette aide.</li>
+          <li>L’orchestrateur comprend les combinaisons naturelles (<i>et</i>, <i>puis</i>, <i>;</i>), les guillemets, et les listes CSV.</li>
+        </ul>
+      </div>
+
+      <p class='hint' style="font-size:{HINT}px;">Tu peux enchaîner : “Recommande 3 films, ajoute le 2e à ma wishlist et décris-le.”</p>
+      </body></html>
+    """;
 
         // Remplacements
         return (css + html)
