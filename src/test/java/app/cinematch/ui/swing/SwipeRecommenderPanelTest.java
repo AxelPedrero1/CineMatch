@@ -26,7 +26,7 @@ import static org.mockito.Mockito.*;
  * - Pas de SwingWorker/animations: on injecte l'état requis par réflexion
  * - Given / When / Then en commentaires
  */
-final class Tool2PanelTest {
+final class SwipeRecommenderPanelTest {
 
     @Test
     @DisplayName("Construction: composants principaux présents (titre, reason, platform, boutons)")
@@ -38,9 +38,9 @@ final class Tool2PanelTest {
 
         try (MockedStatic<JsonStorage> ignored = mockStatic(JsonStorage.class)) {
             // When
-            final Tool2Panel[] ref = new Tool2Panel[1];
-            SwingUtilities.invokeAndWait(() -> ref[0] = new Tool2Panel(service, parent));
-            final Tool2Panel panel = ref[0];
+            final SwipeRecommenderPanel[] ref = new SwipeRecommenderPanel[1];
+            SwingUtilities.invokeAndWait(() -> ref[0] = new SwipeRecommenderPanel(service, parent));
+            final SwipeRecommenderPanel panel = ref[0];
 
             // Then
             assertNotNull(getField(panel, "title"));
@@ -61,13 +61,13 @@ final class Tool2PanelTest {
         final MovieRecommenderService service = mock(MovieRecommenderService.class);
         final java.util.function.Consumer<String> parent = mock(java.util.function.Consumer.class);
 
-        final Tool2Panel[] ref = new Tool2Panel[1];
-        SwingUtilities.invokeAndWait(() -> ref[0] = new Tool2Panel(service, parent));
-        final Tool2Panel panel = ref[0];
+        final SwipeRecommenderPanel[] ref = new SwipeRecommenderPanel[1];
+        SwingUtilities.invokeAndWait(() -> ref[0] = new SwipeRecommenderPanel(service, parent));
+        final SwipeRecommenderPanel panel = ref[0];
 
-        final Method htmlEscape = Tool2Panel.class.getDeclaredMethod("htmlEscape", String.class);
+        final Method htmlEscape = SwipeRecommenderPanel.class.getDeclaredMethod("htmlEscape", String.class);
         htmlEscape.setAccessible(true);
-        final Method setDescHtml = Tool2Panel.class.getDeclaredMethod("setDescHtml", String.class);
+        final Method setDescHtml = SwipeRecommenderPanel.class.getDeclaredMethod("setDescHtml", String.class);
         setDescHtml.setAccessible(true);
 
         // When on échappe puis on pousse dans setDescHtml via réflexion
@@ -95,9 +95,9 @@ final class Tool2PanelTest {
         final Recommendation rec = mock(Recommendation.class);
         when(rec.title()).thenReturn("Matrix");
 
-        final Tool2Panel[] ref = new Tool2Panel[1];
-        SwingUtilities.invokeAndWait(() -> ref[0] = new Tool2Panel(service, parent));
-        final Tool2Panel panel = ref[0];
+        final SwipeRecommenderPanel[] ref = new SwipeRecommenderPanel[1];
+        SwingUtilities.invokeAndWait(() -> ref[0] = new SwipeRecommenderPanel(service, parent));
+        final SwipeRecommenderPanel panel = ref[0];
 
         setField(panel, "current", rec);
         final JLabel title = (JLabel) getField(panel, "title");
@@ -119,9 +119,9 @@ final class Tool2PanelTest {
         final Recommendation rec = mock(Recommendation.class);
         when(rec.title()).thenReturn("Film Random");
 
-        final Tool2Panel[] ref = new Tool2Panel[1];
-        SwingUtilities.invokeAndWait(() -> ref[0] = new Tool2Panel(service, parent));
-        final Tool2Panel panel = ref[0];
+        final SwipeRecommenderPanel[] ref = new SwipeRecommenderPanel[1];
+        SwingUtilities.invokeAndWait(() -> ref[0] = new SwipeRecommenderPanel(service, parent));
+        final SwipeRecommenderPanel panel = ref[0];
 
         setField(panel, "current", rec);
         final JLabel title = (JLabel) getField(panel, "title");
@@ -144,9 +144,9 @@ final class Tool2PanelTest {
         final Recommendation rec = mock(Recommendation.class);
         when(rec.title()).thenReturn("Amélie");
 
-        final Tool2Panel[] ref = new Tool2Panel[1];
-        SwingUtilities.invokeAndWait(() -> ref[0] = new Tool2Panel(service, parent));
-        final Tool2Panel panel = ref[0];
+        final SwipeRecommenderPanel[] ref = new SwipeRecommenderPanel[1];
+        SwingUtilities.invokeAndWait(() -> ref[0] = new SwipeRecommenderPanel(service, parent));
+        final SwipeRecommenderPanel panel = ref[0];
 
         // injecter l'état et réactiver les boutons
         setField(panel, "current", rec);
@@ -178,7 +178,7 @@ final class Tool2PanelTest {
         f.set(target, value);
     }
 
-    private static void enableButtonsForClick(final Tool2Panel panel) throws Exception {
+    private static void enableButtonsForClick(final SwipeRecommenderPanel panel) throws Exception {
         final JButton likeBtn = (JButton) getField(panel, "likeBtn");
         final JButton nopeBtn = (JButton) getField(panel, "nopeBtn");
         final JButton seenBtn = (JButton) getField(panel, "seenBtn");
@@ -222,12 +222,12 @@ final class Tool2PanelTest {
     @DisplayName("paintComponent: rendu gradient sans exception")
     void paintComponent_drawsGradient() throws Exception {
         // GIVEN un panel rendu
-        final Tool2Panel[] ref = new Tool2Panel[1];
+        final SwipeRecommenderPanel[] ref = new SwipeRecommenderPanel[1];
         try (MockedStatic<JsonStorage> ignored = mockStatic(JsonStorage.class)) {
             SwingUtilities.invokeAndWait(() ->
-                    ref[0] = new Tool2Panel(mock(MovieRecommenderService.class), mock(java.util.function.Consumer.class)));
+                    ref[0] = new SwipeRecommenderPanel(mock(MovieRecommenderService.class), mock(java.util.function.Consumer.class)));
         }
-        Tool2Panel panel = ref[0];
+        SwipeRecommenderPanel panel = ref[0];
         BufferedImage img = new BufferedImage(320, 200, BufferedImage.TYPE_INT_ARGB);
         Graphics g = img.getGraphics();
 
@@ -243,11 +243,11 @@ final class Tool2PanelTest {
     @DisplayName("htmlEscape(null): branche null -> \"\"")
     void htmlEscape_null_returnsEmpty() throws Exception {
         // GIVEN un panel
-        final Tool2Panel[] ref = new Tool2Panel[1];
+        final SwipeRecommenderPanel[] ref = new SwipeRecommenderPanel[1];
         SwingUtilities.invokeAndWait(() ->
-                ref[0] = new Tool2Panel(mock(MovieRecommenderService.class), mock(java.util.function.Consumer.class)));
-        Tool2Panel panel = ref[0];
-        Method htmlEscape = Tool2Panel.class.getDeclaredMethod("htmlEscape", String.class);
+                ref[0] = new SwipeRecommenderPanel(mock(MovieRecommenderService.class), mock(java.util.function.Consumer.class)));
+        SwipeRecommenderPanel panel = ref[0];
+        Method htmlEscape = SwipeRecommenderPanel.class.getDeclaredMethod("htmlEscape", String.class);
         htmlEscape.setAccessible(true);
 
         // WHEN on appelle avec null
@@ -261,11 +261,11 @@ final class Tool2PanelTest {
     @DisplayName("startDescriptionForCurrent: current==null -> early return")
     void startDescription_earlyReturn_whenNoCurrent() throws Exception {
         // GIVEN panel avec current==null (état par défaut)
-        final Tool2Panel[] ref = new Tool2Panel[1];
+        final SwipeRecommenderPanel[] ref = new SwipeRecommenderPanel[1];
         SwingUtilities.invokeAndWait(() ->
-                ref[0] = new Tool2Panel(mock(MovieRecommenderService.class), mock(java.util.function.Consumer.class)));
-        Tool2Panel panel = ref[0];
-        Method start = Tool2Panel.class.getDeclaredMethod("startDescriptionForCurrent");
+                ref[0] = new SwipeRecommenderPanel(mock(MovieRecommenderService.class), mock(java.util.function.Consumer.class)));
+        SwipeRecommenderPanel panel = ref[0];
+        Method start = SwipeRecommenderPanel.class.getDeclaredMethod("startDescriptionForCurrent");
         start.setAccessible(true);
         JEditorPane desc = (JEditorPane) getField(panel, "descPane");
         String before = desc.getText();
@@ -283,13 +283,13 @@ final class Tool2PanelTest {
         // GIVEN current = A et service renvoie une desc
         MovieRecommenderService service = mock(MovieRecommenderService.class);
         when(service.generateDescription("A")).thenReturn("Desc A");
-        final Tool2Panel[] ref = new Tool2Panel[1];
+        final SwipeRecommenderPanel[] ref = new SwipeRecommenderPanel[1];
         SwingUtilities.invokeAndWait(() ->
-                ref[0] = new Tool2Panel(service, mock(java.util.function.Consumer.class)));
-        Tool2Panel panel = ref[0];
+                ref[0] = new SwipeRecommenderPanel(service, mock(java.util.function.Consumer.class)));
+        SwipeRecommenderPanel panel = ref[0];
         Recommendation recA = mock(Recommendation.class); when(recA.title()).thenReturn("A");
         setField(panel, "current", recA);
-        Method start = Tool2Panel.class.getDeclaredMethod("startDescriptionForCurrent");
+        Method start = SwipeRecommenderPanel.class.getDeclaredMethod("startDescriptionForCurrent");
         start.setAccessible(true);
         JEditorPane desc = (JEditorPane) getField(panel, "descPane");
 
@@ -308,13 +308,13 @@ final class Tool2PanelTest {
         // GIVEN current = Film, service renvoie deux lignes avec caractères HTML
         MovieRecommenderService service = mock(MovieRecommenderService.class);
         when(service.generateDescription("Film")).thenReturn("Line1\nLine2 & <3");
-        final Tool2Panel[] ref = new Tool2Panel[1];
+        final SwipeRecommenderPanel[] ref = new SwipeRecommenderPanel[1];
         SwingUtilities.invokeAndWait(() ->
-                ref[0] = new Tool2Panel(service, mock(java.util.function.Consumer.class)));
-        Tool2Panel panel = ref[0];
+                ref[0] = new SwipeRecommenderPanel(service, mock(java.util.function.Consumer.class)));
+        SwipeRecommenderPanel panel = ref[0];
         Recommendation rec = mock(Recommendation.class); when(rec.title()).thenReturn("Film");
         setField(panel, "current", rec);
-        Method start = Tool2Panel.class.getDeclaredMethod("startDescriptionForCurrent");
+        Method start = SwipeRecommenderPanel.class.getDeclaredMethod("startDescriptionForCurrent");
         start.setAccessible(true);
         JEditorPane desc = (JEditorPane) getField(panel, "descPane");
 
@@ -337,14 +337,14 @@ final class Tool2PanelTest {
         // GIVEN service.recommendRandom() jette, wishlist vide
         MovieRecommenderService service = mock(MovieRecommenderService.class);
         when(service.recommendRandom()).thenThrow(new RuntimeException("Boom"));
-        final Tool2Panel[] ref = new Tool2Panel[1];
+        final SwipeRecommenderPanel[] ref = new SwipeRecommenderPanel[1];
         try (MockedStatic<JsonStorage> mocked = mockStatic(JsonStorage.class)) {
             mocked.when(() -> JsonStorage.getByStatus("envie")).thenReturn(List.of());
             SwingUtilities.invokeAndWait(() ->
-                    ref[0] = new Tool2Panel(service, mock(java.util.function.Consumer.class)));
+                    ref[0] = new SwipeRecommenderPanel(service, mock(java.util.function.Consumer.class)));
         }
-        Tool2Panel panel = ref[0];
-        Method proposeNext = Tool2Panel.class.getDeclaredMethod("proposeNext");
+        SwipeRecommenderPanel panel = ref[0];
+        Method proposeNext = SwipeRecommenderPanel.class.getDeclaredMethod("proposeNext");
         proposeNext.setAccessible(true);
         JLabel title = (JLabel) getField(panel, "title");
         JEditorPane desc = (JEditorPane) getField(panel, "descPane");
@@ -364,10 +364,10 @@ final class Tool2PanelTest {
     void actions_noCurrent_neverMark() throws Exception {
         // GIVEN panel avec boutons activés et current==null
         MovieRecommenderService service = mock(MovieRecommenderService.class);
-        final Tool2Panel[] ref = new Tool2Panel[1];
+        final SwipeRecommenderPanel[] ref = new SwipeRecommenderPanel[1];
         SwingUtilities.invokeAndWait(() ->
-                ref[0] = new Tool2Panel(service, mock(java.util.function.Consumer.class)));
-        Tool2Panel panel = ref[0];
+                ref[0] = new SwipeRecommenderPanel(service, mock(java.util.function.Consumer.class)));
+        SwipeRecommenderPanel panel = ref[0];
         final JButton likeBtn = (JButton) getField(panel, "likeBtn");
         final JButton nopeBtn = (JButton) getField(panel, "nopeBtn");
         final JButton seenBtn = (JButton) getField(panel, "seenBtn");

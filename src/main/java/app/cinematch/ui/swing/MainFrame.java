@@ -5,7 +5,6 @@ import app.cinematch.agent.ChatAgent;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.function.Consumer;
 
 /**
  * Fenêtre principale de l’application <b>CineMatch 🎬 Deluxe</b>.
@@ -14,10 +13,10 @@ import java.util.function.Consumer;
  * {@link CardLayout}. Les vues suivantes sont enregistrées :</p>
  * <ul>
  *   <li>{@code "home"} — écran d’accueil ({@link HomePanel})</li>
- *   <li>{@code "t1"} — outil « Film similaire » ({@link Tool1Panel})</li>
- *   <li>{@code "t2"} — outil « Swipe » ({@link Tool2Panel})</li>
- *   <li>{@code "t3"} — outil « Ma liste » ({@link Tool3Panel})</li>
- *   <li>{@code "chat"} — chat IA ({@link Tool4Panel})</li>
+ *   <li>{@code "t1"} — outil « Film similaire » ({@link SimilarMoviePanel})</li>
+ *   <li>{@code "t2"} — outil « Swipe » ({@link SwipeRecommenderPanel})</li>
+ *   <li>{@code "t3"} — outil « Ma liste » ({@link WishlistPanel})</li>
+ *   <li>{@code "chat"} — chat IA ({@link ChatPanel})</li>
  *   <li>{@code "hist"} — historique ({@link HistoryPanel})</li>
  * </ul>
  *
@@ -34,10 +33,10 @@ import java.util.function.Consumer;
  * }</pre>
  *
  * @see HomePanel
- * @see Tool1Panel
- * @see Tool2Panel
- * @see Tool3Panel
- * @see Tool4Panel
+ * @see SimilarMoviePanel
+ * @see SwipeRecommenderPanel
+ * @see WishlistPanel
+ * @see ChatPanel
  * @see HistoryPanel
  */
 public class MainFrame extends JFrame {
@@ -54,7 +53,7 @@ public class MainFrame extends JFrame {
     /**
      * Construit la fenêtre principale et enregistre toutes les vues.
      *
-     * <p>Si {@code agent} est {@code null}, le panneau de chat ({@link Tool4Panel})
+     * <p>Si {@code agent} est {@code null}, le panneau de chat ({@link ChatPanel})
      * est créé avec une fonction de réponse par défaut indiquant l’indisponibilité
      * du chat IA.</p>
      *
@@ -71,14 +70,14 @@ public class MainFrame extends JFrame {
 
         // Écrans principaux
         HomePanel home = new HomePanel(this);
-        Tool1Panel t1 = new Tool1Panel(service, this::showCard);
-        Tool2Panel t2 = new Tool2Panel(service, this::showCard);
-        Tool3Panel t3 = new Tool3Panel(service, this::showCard);
+        SimilarMoviePanel t1 = new SimilarMoviePanel(service, this::showCard);
+        SwipeRecommenderPanel t2 = new SwipeRecommenderPanel(service, this::showCard);
+        WishlistPanel t3 = new WishlistPanel(service, this::showCard);
 
         // agent peut être null → fallback fonctionnel
-        Tool4Panel chat = (agent != null)
-                ? new Tool4Panel(agent, this::showCard)
-                : new Tool4Panel(
+        ChatPanel chat = (agent != null)
+                ? new ChatPanel(agent, this::showCard)
+                : new ChatPanel(
                 q -> "Le chat IA est indisponible pour le moment.",
                 this::showCard
         );

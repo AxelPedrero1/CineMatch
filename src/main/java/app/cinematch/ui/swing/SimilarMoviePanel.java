@@ -31,7 +31,7 @@ import javax.swing.border.LineBorder;
  *
  * <p>Compatible mode headless pour les tests JUnit.</p>
  */
-public final class Tool1Panel extends JPanel {
+public final class SimilarMoviePanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
@@ -62,8 +62,8 @@ public final class Tool1Panel extends JPanel {
     private final JButton descBtn = new JButton("Régénérer description");
     private final JButton backBtn = new JButton("Retour");
 
-    public Tool1Panel(final MovieRecommenderService service,
-                      final Consumer<String> navigator) {
+    public SimilarMoviePanel(final MovieRecommenderService service,
+                             final Consumer<String> navigator) {
         this.service = Objects.requireNonNull(service);
         this.navigator = Objects.requireNonNull(navigator);
 
@@ -139,8 +139,8 @@ public final class Tool1Panel extends JPanel {
         descBtn.addActionListener(e -> startDescriptionForCurrent());
     }
 
-    public Tool1Panel(final MovieRecommenderService service,
-                      final app.cinematch.ui.swing.MainFrame parent) {
+    public SimilarMoviePanel(final MovieRecommenderService service,
+                             final app.cinematch.ui.swing.MainFrame parent) {
         this(service, Objects.requireNonNull(parent)::showCard);
     }
 

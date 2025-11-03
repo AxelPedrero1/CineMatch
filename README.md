@@ -43,7 +43,7 @@ src/main/java/app/cinematch
 │       └── MultiActionTools.java
 ├── api/OllamaClient.java          # Client HTTP pour le modèle Ollama
 ├── model/…                        # Records (Recommendation, HistoryEntry, …)
-├── ui/swing/                      # Fenêtres/panneaux (Home, Tool1-4, History)
+├── ui/swing/                      # Fenêtres/panneaux (Home, SimilarMoviePanel, History, etc..)
 └── util/JsonStorage.java          # Persistance JSON thread-safe
 
 ```
@@ -54,7 +54,7 @@ src/main/java/app/cinematch
 [MovieRecommenderService.java](src/main/java/app/cinematch/MovieRecommenderService.java)
 - **ChatAgent** orchestre le dialogue avec le LLM pour le panneau de chat, s’appuyant sur une mémoire conversationnelle légère et un profil métier (expert cinéma).
 [ChatAgent.java](src/main/java/app/cinematch/agent/ChatAgent.java)
-- **Interface Swing** repose sur un `CardLayout` : `Tool1Panel` (film similaire + description), `Tool2Panel` (mode « swipe »), `Tool3Panel` (liste personnelle), `Tool4Panel` (chat IA) et `HistoryPanel` (journal des interactions), retiré de l’interface finale car jugé non essentiel à l’usage principal.
+- **Interface Swing** repose sur un `CardLayout` : `SimilarMoviePanel` (film similaire + description), `SwipeRecommenderPanel` (mode « swipe »), `WishlistPanel` (liste personnelle), `ChatPanel` (chat IA) et `HistoryPanel` (journal des interactions), retiré de l’interface finale car jugé non essentiel à l’usage principal.
 [MainFrame.java](src/main/java/app/cinematch/ui/swing/MainFrame.java)
 - **Utilitaires** : `JsonStorage` gère un fichier JSON persistant et `ImageLoader` centralise le chargement des visuels pour l’interface.
 [JsonStorage.java](src/main/java/app/cinematch/util/JsonStorage.java)
@@ -117,17 +117,17 @@ L’application interroge par défaut le modèle **`qwen2.5:7b-instruct`**, conf
 
 **Léo**
 - IA & Agent : ajout de l’agent conversationnel (`feature/AgentMemory`) et de la **mémoire de conversation** (`feature/ConversationMemory`).
-- UX Chat : **refonte visuelle de `Tool4Panel`** et **barre de chargement** pendant la réflexion de l’IA (`feature/LoadingBar`).
+- UX Chat : **refonte visuelle de `ChatPanel`** et **barre de chargement** pendant la réflexion de l’IA (`feature/LoadingBar`).
 - Maintenance : retrait de l’API TMDB ; adaptations des tests à la nouvelle UI du chat.
 
 **Axel**
 - Qualité & Tests : mise en place des **outils de qualité** (JaCoCo, SpotBugs, Checkstyle) et **tests JUnit** à large couverture :
-    - UI : suites Swing robustes (EDT-safe, headless) pour `Tool1/2/3/4Panel`, `History`, `Home`, `MainFrame`.
+    - UI : suites Swing robustes (EDT-safe, headless) pour `Les 4 Panels`, `History`, `Home`, `MainFrame`.
 - Robustesse : nombreuses **corrections SpotBugs** (copies défensives, non-sérialisation de `SwingWorker`, formats portables).
 - CI/Repo : ajustements de workflows/permissions et intégration continue orientée tests/qualité.
 
 **Simon**
-- UI/UX : **améliorations visuelles** (accueil, Tool2/Tool3, description, swipe buttons) et **corrections Tool2**.
+- UI/UX : **améliorations visuelles** (accueil, les 4 panels, description, swipe buttons) et **corrections SwipeRecommenderPanel**.
 - Documentation : **Javadocs** sur `api`, `agent`, `model`, `uiSwing`, `util`.
 - Qualité : corrections ciblées SpotBugs (dont `ChatAgent`), **coordination & merges** réguliers des PRs.
 
@@ -147,7 +147,7 @@ La mise en place de tests approfondie permettant de garantir sa stabilité, sa r
     - `OllamaClient`
     - `JsonStorage`
     - `ImageLoader`
-- Des tests Swing spécifiques (EDT-safe, headless) ont été ajoutés pour valider la stabilité de l’interface utilisateur (`Tool1Panel` à `Tool4Panel`, `History`, `Home`, `MainFrame`).
+- Des tests Swing spécifiques (EDT-safe, headless) ont été ajoutés pour valider la stabilité de l’interface utilisateur (`SimilarMoviePanel` à `ChatPanel`, `History`, `Home`, `MainFrame`).
 
 ### 🔹 Outils de qualité
 - **JaCoCo** : mesure de couverture de code.

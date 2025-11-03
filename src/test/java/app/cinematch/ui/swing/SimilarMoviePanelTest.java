@@ -17,7 +17,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 
@@ -28,7 +27,7 @@ import static org.mockito.Mockito.*;
  * Tests unitaires pour Tool1Panel.
  * Version stable, compatible headless et chaînes HTML.
  */
-class Tool1PanelTest {
+class SimilarMoviePanelTest {
 
     @BeforeAll
     static void headless() {
@@ -162,7 +161,7 @@ class Tool1PanelTest {
     void emptyInput_noCall() {
         MovieRecommenderService service = mock(MovieRecommenderService.class);
         MainFrame frame = mock(MainFrame.class);
-        Tool1Panel panel = new Tool1Panel(service, frame);
+        SimilarMoviePanel panel = new SimilarMoviePanel(service, frame);
 
         JTextField input = findTextField(panel);
         JButton propose = findButton(panel, "Proposer");
@@ -179,7 +178,7 @@ class Tool1PanelTest {
     void propose_updates_labels_and_description() {
         MovieRecommenderService service = mock(MovieRecommenderService.class);
         MainFrame frame = mock(MainFrame.class);
-        Tool1Panel panel = new Tool1Panel(service, frame);
+        SimilarMoviePanel panel = new SimilarMoviePanel(service, frame);
 
         JTextField input = findTextField(panel);
         JButton propose = findButton(panel, "Proposer");
@@ -210,7 +209,7 @@ class Tool1PanelTest {
     void regenerate_description_replaces_text() {
         MovieRecommenderService service = mock(MovieRecommenderService.class);
         MainFrame frame = mock(MainFrame.class);
-        Tool1Panel panel = new Tool1Panel(service, frame);
+        SimilarMoviePanel panel = new SimilarMoviePanel(service, frame);
 
         JTextField input = findTextField(panel);
         JButton propose = findButton(panel, "Proposer");
@@ -239,7 +238,7 @@ class Tool1PanelTest {
     void add_to_wishlist_marks_and_dialog() throws Exception {
         MovieRecommenderService service = mock(MovieRecommenderService.class);
         MainFrame frame = mock(MainFrame.class);
-        Tool1Panel panel = new Tool1Panel(service, frame);
+        SimilarMoviePanel panel = new SimilarMoviePanel(service, frame);
 
         JTextField input = findTextField(panel);
         JButton propose = findButton(panel, "Proposer");
@@ -285,7 +284,7 @@ class Tool1PanelTest {
     @DisplayName("Hover sur bouton stylé: styles changent puis reviennent")
     void hover_changes_then_resets() {
         MovieRecommenderService service = mock(MovieRecommenderService.class);
-        Tool1Panel panel = new Tool1Panel(service, mock(MainFrame.class));
+        SimilarMoviePanel panel = new SimilarMoviePanel(service, mock(MainFrame.class));
         JButton propose = findButton(panel, "Proposer");
         Assertions.assertNotNull(propose);
 
@@ -314,7 +313,7 @@ class Tool1PanelTest {
     @DisplayName("paintComponent: gradient sans exception et pixels opaques")
     void paint_component_gradient_ok() {
         MovieRecommenderService service = mock(MovieRecommenderService.class);
-        Tool1Panel panel = new Tool1Panel(service, mock(MainFrame.class));
+        SimilarMoviePanel panel = new SimilarMoviePanel(service, mock(MainFrame.class));
         panel.setSize(320, 200);
 
         BufferedImage img = new BufferedImage(320, 200, BufferedImage.TYPE_INT_ARGB);
@@ -335,7 +334,7 @@ class Tool1PanelTest {
     @DisplayName("startDescriptionForCurrent: no-op si current == null")
     void start_desc_noop_when_current_null() {
         MovieRecommenderService service = mock(MovieRecommenderService.class);
-        Tool1Panel panel = new Tool1Panel(service, mock(MainFrame.class));
+        SimilarMoviePanel panel = new SimilarMoviePanel(service, mock(MainFrame.class));
 
         JButton regen = findButton(panel, "Régénérer description");
         noThrow(regen::doClick, "Régénérer description ne doit pas jeter si current == null");

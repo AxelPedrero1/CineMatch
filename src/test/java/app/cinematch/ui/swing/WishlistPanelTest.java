@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @DisplayName("Tool3Panel — BDD Given/When/Then (100% JaCoCo)")
-final class Tool3PanelTest {
+final class WishlistPanelTest {
 
     @BeforeAll
     static void edtUp() throws Exception {
@@ -35,7 +35,7 @@ final class Tool3PanelTest {
         Consumer<String> nav = mock(Consumer.class);
 
         // WHEN
-        Tool3Panel panel = new Tool3Panel(service, nav);
+        WishlistPanel panel = new WishlistPanel(service, nav);
 
         // THEN
         JEditorPane descPane = (JEditorPane) get(panel, "descPane");
@@ -50,13 +50,13 @@ final class Tool3PanelTest {
     @DisplayName("GIVEN controls WHEN setBusy(true/false) THEN all are toggled accordingly")
     void GIVEN_controls_WHEN_setBusy_THEN_toggled() throws Exception {
         // GIVEN
-        Tool3Panel panel = new Tool3Panel(mock(MovieRecommenderService.class), mock(Consumer.class));
+        WishlistPanel panel = new WishlistPanel(mock(MovieRecommenderService.class), mock(Consumer.class));
         JButton refresh = (JButton) get(panel, "refresh");
         JButton describe = (JButton) get(panel, "describe");
         JButton remove = (JButton) get(panel, "remove");
         JButton back = (JButton) get(panel, "backBtn");
         JList<?> list = (JList<?>) get(panel, "list");
-        Method setBusy = Tool3Panel.class.getDeclaredMethod("setBusy", boolean.class);
+        Method setBusy = WishlistPanel.class.getDeclaredMethod("setBusy", boolean.class);
         setBusy.setAccessible(true);
 
         // WHEN
@@ -93,7 +93,7 @@ final class Tool3PanelTest {
     @DisplayName("GIVEN a panel WHEN painting THEN gradient is drawn without error")
     void GIVEN_panel_WHEN_paintComponent_THEN_noError() throws Exception {
         // GIVEN
-        Tool3Panel panel = new Tool3Panel(mock(MovieRecommenderService.class), mock(Consumer.class));
+        WishlistPanel panel = new WishlistPanel(mock(MovieRecommenderService.class), mock(Consumer.class));
         BufferedImage img = new BufferedImage(320, 200, BufferedImage.TYPE_INT_ARGB);
         Graphics g = img.getGraphics();
 
@@ -112,9 +112,9 @@ final class Tool3PanelTest {
         // GIVEN
         MovieRecommenderService service = mock(MovieRecommenderService.class);
         when(service.generateDescription("Titre A")).thenReturn("Line1\nLine2 & <3");
-        Tool3Panel[] ref = new Tool3Panel[1];
-        SwingUtilities.invokeAndWait(() -> ref[0] = new Tool3Panel(service, mock(Consumer.class)));
-        Tool3Panel panel = ref[0];
+        WishlistPanel[] ref = new WishlistPanel[1];
+        SwingUtilities.invokeAndWait(() -> ref[0] = new WishlistPanel(service, mock(Consumer.class)));
+        WishlistPanel panel = ref[0];
         @SuppressWarnings("unchecked") JList<String> list = (JList<String>) get(panel, "list");
         JEditorPane desc = (JEditorPane) get(panel, "descPane");
         JButton describe = (JButton) get(panel, "describe");
@@ -154,9 +154,9 @@ final class Tool3PanelTest {
     @DisplayName("GIVEN a selected item WHEN clicking Refresh and Remove THEN message is pertinent (HTML variants accepted)")
     void GIVEN_selected_WHEN_refreshRemove_THEN_messagePertinent() throws Exception {
         // GIVEN
-        Tool3Panel[] ref = new Tool3Panel[1];
-        SwingUtilities.invokeAndWait(() -> ref[0] = new Tool3Panel(mock(MovieRecommenderService.class), mock(Consumer.class)));
-        Tool3Panel panel = ref[0];
+        WishlistPanel[] ref = new WishlistPanel[1];
+        SwingUtilities.invokeAndWait(() -> ref[0] = new WishlistPanel(mock(MovieRecommenderService.class), mock(Consumer.class)));
+        WishlistPanel panel = ref[0];
         @SuppressWarnings("unchecked") JList<String> list = (JList<String>) get(panel, "list");
         JEditorPane desc = (JEditorPane) get(panel, "descPane");
         JButton refresh = (JButton) get(panel, "refresh");
@@ -189,7 +189,7 @@ final class Tool3PanelTest {
     @DisplayName("GIVEN selection listener WHEN adjusting true THEN no change; WHEN false THEN helper message appears")
     void GIVEN_selectionListener_WHEN_adjustingBranches_THEN_expectedEffects() throws Exception {
         // GIVEN
-        Tool3Panel panel = new Tool3Panel(mock(MovieRecommenderService.class), mock(Consumer.class));
+        WishlistPanel panel = new WishlistPanel(mock(MovieRecommenderService.class), mock(Consumer.class));
         @SuppressWarnings("unchecked") JList<String> list = (JList<String>) get(panel, "list");
         JEditorPane desc = (JEditorPane) get(panel, "descPane");
 
@@ -226,10 +226,10 @@ final class Tool3PanelTest {
     @DisplayName("GIVEN nulls WHEN escape/stripQuotes called THEN empty string returned")
     void GIVEN_nulls_WHEN_escapeStrip_THEN_empty() throws Exception {
         // GIVEN
-        Tool3Panel panel = new Tool3Panel(mock(MovieRecommenderService.class), mock(Consumer.class));
-        Method escape = Tool3Panel.class.getDeclaredMethod("escape", String.class);
+        WishlistPanel panel = new WishlistPanel(mock(MovieRecommenderService.class), mock(Consumer.class));
+        Method escape = WishlistPanel.class.getDeclaredMethod("escape", String.class);
         escape.setAccessible(true);
-        Method strip = Tool3Panel.class.getDeclaredMethod("stripQuotes", String.class);
+        Method strip = WishlistPanel.class.getDeclaredMethod("stripQuotes", String.class);
         strip.setAccessible(true);
 
         // WHEN / THEN
@@ -243,10 +243,10 @@ final class Tool3PanelTest {
     @DisplayName("GIVEN no selection WHEN clicking Remove THEN no change (branch t==null covered)")
     void GIVEN_noSelection_WHEN_remove_THEN_noChange() throws Exception {
         // GIVEN
-        Tool3Panel[] ref = new Tool3Panel[1];
+        WishlistPanel[] ref = new WishlistPanel[1];
         SwingUtilities.invokeAndWait(() -> ref[0] =
-                new Tool3Panel(mock(MovieRecommenderService.class), mock(Consumer.class)));
-        Tool3Panel panel = ref[0];
+                new WishlistPanel(mock(MovieRecommenderService.class), mock(Consumer.class)));
+        WishlistPanel panel = ref[0];
         @SuppressWarnings("unchecked") JList<String> list = (JList<String>) get(panel, "list");
         JEditorPane desc = (JEditorPane) get(panel, "descPane");
         JButton remove = (JButton) get(panel, "remove");
@@ -272,9 +272,9 @@ final class Tool3PanelTest {
     void GIVEN_noSelection_WHEN_describe_THEN_serviceNotCalled() throws Exception {
         // GIVEN
         MovieRecommenderService service = mock(MovieRecommenderService.class);
-        Tool3Panel[] ref = new Tool3Panel[1];
-        SwingUtilities.invokeAndWait(() -> ref[0] = new Tool3Panel(service, mock(Consumer.class)));
-        Tool3Panel panel = ref[0];
+        WishlistPanel[] ref = new WishlistPanel[1];
+        SwingUtilities.invokeAndWait(() -> ref[0] = new WishlistPanel(service, mock(Consumer.class)));
+        WishlistPanel panel = ref[0];
         @SuppressWarnings("unchecked") JList<String> list = (JList<String>) get(panel, "list");
         JEditorPane desc = (JEditorPane) get(panel, "descPane");
         JButton describe = (JButton) get(panel, "describe");
@@ -303,9 +303,9 @@ final class Tool3PanelTest {
         MovieRecommenderService service = mock(MovieRecommenderService.class);
         @SuppressWarnings("unchecked")
         Consumer<String> navigator = mock(Consumer.class);
-        Tool3Panel[] ref = new Tool3Panel[1];
-        SwingUtilities.invokeAndWait(() -> ref[0] = new Tool3Panel(service, navigator));
-        Tool3Panel panel = ref[0];
+        WishlistPanel[] ref = new WishlistPanel[1];
+        SwingUtilities.invokeAndWait(() -> ref[0] = new WishlistPanel(service, navigator));
+        WishlistPanel panel = ref[0];
         JButton back = (JButton) get(panel, "backBtn");
 
         // WHEN
@@ -322,9 +322,9 @@ final class Tool3PanelTest {
         // GIVEN
         MovieRecommenderService service = mock(MovieRecommenderService.class);
         when(service.generateDescription("Titre Err")).thenThrow(new RuntimeException("Boom!"));
-        Tool3Panel[] ref = new Tool3Panel[1];
-        SwingUtilities.invokeAndWait(() -> ref[0] = new Tool3Panel(service, mock(Consumer.class)));
-        Tool3Panel panel = ref[0];
+        WishlistPanel[] ref = new WishlistPanel[1];
+        SwingUtilities.invokeAndWait(() -> ref[0] = new WishlistPanel(service, mock(Consumer.class)));
+        WishlistPanel panel = ref[0];
         @SuppressWarnings("unchecked") JList<String> list = (JList<String>) get(panel, "list");
         JEditorPane desc = (JEditorPane) get(panel, "descPane");
         JButton describe = (JButton) get(panel, "describe");
@@ -354,10 +354,10 @@ final class Tool3PanelTest {
     @DisplayName("GIVEN a selected item WHEN calling removeSelection() directly THEN 'Retiré de la liste.' HTML is shown")
     void GIVEN_selectedItem_WHEN_removeSelectionDirect_THEN_removedMessage() throws Exception {
         // GIVEN
-        Tool3Panel[] ref = new Tool3Panel[1];
+        WishlistPanel[] ref = new WishlistPanel[1];
         SwingUtilities.invokeAndWait(() -> ref[0] =
-                new Tool3Panel(mock(MovieRecommenderService.class), mock(Consumer.class)));
-        Tool3Panel panel = ref[0];
+                new WishlistPanel(mock(MovieRecommenderService.class), mock(Consumer.class)));
+        WishlistPanel panel = ref[0];
         @SuppressWarnings("unchecked") JList<String> list = (JList<String>) get(panel, "list");
         JEditorPane desc = (JEditorPane) get(panel, "descPane");
 
@@ -370,7 +370,7 @@ final class Tool3PanelTest {
         });
 
         // WHEN — on invoque la méthode privée (évite que le ListSelectionListener ne réécrive l'HTML juste après)
-        Method removeSelection = Tool3Panel.class.getDeclaredMethod("removeSelection");
+        Method removeSelection = WishlistPanel.class.getDeclaredMethod("removeSelection");
         removeSelection.setAccessible(true);
         SwingUtilities.invokeAndWait(() -> {
             try { removeSelection.invoke(panel); } catch (Exception e) { throw new RuntimeException(e); }
@@ -389,10 +389,10 @@ final class Tool3PanelTest {
     @DisplayName("GIVEN the panel WHEN clicking Refresh THEN loadWishlist listener (lambda$new$0) is executed")
     void GIVEN_panel_WHEN_clickRefresh_THEN_lambda0Covered() throws Exception {
         // GIVEN
-        Tool3Panel[] ref = new Tool3Panel[1];
+        WishlistPanel[] ref = new WishlistPanel[1];
         SwingUtilities.invokeAndWait(() -> ref[0] =
-                new Tool3Panel(mock(MovieRecommenderService.class), mock(Consumer.class)));
-        Tool3Panel panel = ref[0];
+                new WishlistPanel(mock(MovieRecommenderService.class), mock(Consumer.class)));
+        WishlistPanel panel = ref[0];
         JButton refresh = (JButton) get(panel, "refresh");
         @SuppressWarnings("unchecked") JList<String> list = (JList<String>) get(panel, "list");
 
