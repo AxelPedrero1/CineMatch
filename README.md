@@ -14,10 +14,10 @@ CineMatch est une application de recommandations de films avec interface Swing a
 ## Fonctionnalités clés
 
 - **Recommandations intelligentes** : génération d’idées à partir d’un film apprécié ou via un mode découverte aléatoire, avec enrichissement automatique (raison, plateforme, année).
-- **Mode swipe** : interface inspirée du « tinder de films » pour accepter/refuser les propositions et enregistrer un statut en un clic.
-- **Gestion de wishlist et d’historique** : stockage persistant des films vus, à voir ou ignorés, consultable depuis l’outil « Ma liste » et l’onglet Historique.
-- **Chat IA outillé** : le panneau de discussion s’appuie sur LangChain4j pour orchestrer des outils (ajout multiple, génération de description, statistiques) tout en conservant une mémoire glissante de la conversation.
-- **Persistance JSON** : toutes les actions utilisateur sont sérialisées dans `src/main/resources/storage.json`, avec surcharge possible via `-Dcinematch.storage` et mode silencieux pour les tests.
+- **Mode swipe** : interface inspirée d'un « tinder de films » pour accepter/refuser les propositions et enregistrer un statut en un clic.
+- **Gestion de wishlist** : stockage persistant des films vus, à voir ou ignorés, consultable depuis l’outil « Ma liste ».
+- **Chat IA outillé** : le panneau de discussion s’appuie sur LangChain4j pour orchestrer des outils (ajout multiple, génération de description, maintenance) tout en conservant une mémoire glissante de la conversation.
+- **Persistance JSON** : toutes les actions utilisateur sont sérialisées dans `src/main/resources/storage.json`.
 
 
 ## Architecture logicielle
