@@ -9,15 +9,18 @@ import java.util.Locale;
 
 public class BulkTools {
 
-    @Tool("Ajoute plusieurs films à la wishlist. 'titles' séparés par virgule ou saut de ligne.")
+    @Tool("Ajoute plusieurs films à la wishlist (séparés par virgules ou retours ligne).")
     public String addManyToWishlist(@P("titles") String titles) {
+        if (titles == null || titles.isBlank()) return "ADDED_MANY:0";
+        WishlistTools wt = new WishlistTools(); // réutilise sa normalize()
         int n = 0;
-        for (String t : split(titles)) {
-            String s = norm(t);
-            if (!s.isBlank()) { JsonStorage.addOrUpdate(s, "envie"); n++; }
+        for (String part : titles.split("[,\\n]")) {
+            String res = wt.addToWishlist(part);
+            if (!"ERROR:EMPTY_TITLE".equals(res)) n++;
         }
         return "ADDED_MANY:" + n;
     }
+
 
     @Tool("Retire plusieurs films de la wishlist (les marque 'pas_interesse').")
     public String removeManyFromWishlist(@P("titles") String titles) {

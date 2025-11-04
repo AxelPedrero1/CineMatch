@@ -3,7 +3,8 @@ package app.cinematch.agent.tools;
 import app.cinematch.util.JsonStorage;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
-
+import java.text.Normalizer;
+import java.util.regex.Pattern;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
@@ -13,6 +14,16 @@ import java.util.stream.Collectors;
  * Le LLM peut les appeler pour modifier/consulter le stockage JSON.
  */
 public class WishlistTools {
+
+    // Coupe “... dans/à ma wishlist / liste d’envie / liste”
+    private static final Pattern TAIL_BUCKET = Pattern.compile(
+            "(?iu)\\s+(?:dans|in|to|into|à|a)\\s*(?:ma|la|the|my)?\\s*(?:wish\\s*list|wishlist|liste(?:\\s*d['’]?envie)?|liste)\\s*$"
+    );
+    // Coupe “... en pas_interesse / en deja_vu / en envie / seen / not interested”
+    private static final Pattern TAIL_STATUS = Pattern.compile(
+            "(?iu)\\s+(?:en|as|to)\\s*(?:pas[_\\s-]*int[eé]ress[eé]?|pas_?interesse|not\\s*interested|"
+                    + "deja[_\\s-]*vu|d[eé]j[aà][_\\s-]*vu|seen|envie)\\s*$"
+    );
 
     @Tool("Ajoute un film à la liste d'envie (statut 'envie').")
     public String addToWishlist(@P("title") String title) {
@@ -85,9 +96,27 @@ public class WishlistTools {
 
     private String normalize(String s) {
         if (s == null) return "";
-        String t = s.replaceAll("[\"“”«»]", "").trim();
-        return t.replaceAll("\\s{2,}", " ");
+
+        // 1) Nettoyage simple
+        String t = s.replaceAll("[\"“”«»]", " ").trim();
+        t = t.replaceAll("\\s{2,}", " ");
+
+        // 2) Coupe les queues “... dans/à ma wishlist|liste d’envie|liste”
+        t = TAIL_BUCKET.matcher(t).replaceFirst("");
+
+        // 3) Coupe les queues “... en pas_interesse|deja_vu|envie / seen / not interested”
+        //    (insensible aux accents et variantes)
+        String deAccented = Normalizer.normalize(t, Normalizer.Form.NFD).replaceAll("\\p{M}+", "");
+        if (TAIL_STATUS.matcher(deAccented).find()) {
+            t = TAIL_STATUS.matcher(t).replaceFirst("");
+        }
+
+        // 4) Ponctuation finale inutile
+        t = t.replaceAll("[.。…]+$", "").trim();
+
+        return t;
     }
+
     private String normalizeStatus(String status) {
         if (status == null || status.isBlank()) return "envie";
         String s = status.trim().toLowerCase(Locale.ROOT)
