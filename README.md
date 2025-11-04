@@ -9,7 +9,7 @@ CineMatch est une application de recommandations de films avec interface Swing a
 [MainFrame.java](src/main/java/app/cinematch/ui/swing/MainFrame.java)
 
 **Image de la page d’accueil de l’application.**
-![page_principale.png](images/page_principale.png)
+![page_principale.png](documentations/images/page_principale.png)
 
 ## Fonctionnalités clés
 
