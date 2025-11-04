@@ -28,9 +28,10 @@ public final class LangChain4jAgentBridge {
     // (?iu) = case-insensitive + unicode (accents)
     private static final Pattern VERB_PREFIX =
             Pattern.compile("(?iu)^.*?(ajoute|ajouter|mets|met|add)\\s*");
-    private static final Pattern LIST_TAIL  =
-            Pattern.compile("(?iu)\\s*(?:dans|à|a|to|into|in)\\s*(?:ma|la|my|the)?\\s*(?:wish\\s*list|wishlist|liste d'envie|liste)\\s*[.!?\\s]*$");
-
+    // accepte ' et ’  -> d['’]?envie
+    private static final Pattern LIST_TAIL =
+            Pattern.compile("(?iu)\\s*(?:dans|à|a|to|into|in)\\s*(?:ma|la|my|the)?\\s*"
+                    + "(?:wish\\s*list|wishlist|liste\\s*d['’]?envie|liste)\\s*[.!?\\s]*$");
     // --- Regex FR robustes ---
     private static final Pattern P_NOT_INTERESTED =
             Pattern.compile("(?iu)\\b(je\\s+ne\\s+suis\\s+pas\\s+int[eé]ress[eé]\\s+par|je\\s+n['’]?aime\\s+pas)\\s+(.+)$");
@@ -223,6 +224,8 @@ public final class LangChain4jAgentBridge {
 
         // Extraction robuste : retire le verbe éventuel + la queue éventuelle
         String titles = extractTitlesForBulk(msg);
+        titles = LIST_TAIL.matcher(titles).replaceFirst("").trim();
+
         if (titles.isEmpty()) return null;
 
         String res = bulkTools.addManyToWishlist(titles);
